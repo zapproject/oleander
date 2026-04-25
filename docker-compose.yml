@@ -1,0 +1,21 @@
+services:
+  witness-council:
+    build: .
+    command: ["node", "dist/cli.js", "council", "--once"]
+    environment:
+      ZAP_NODE_ID: witness-council
+      ZAP_CLAIM_FEED: claims/demo.json
+      DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
+    volumes:
+      - ../deepseek.md:/run/secrets/deepseek.md:ro
+
+  witness-stablecoin:
+    build: .
+    command: ["node", "dist/cli.js", "run", "--once"]
+    environment:
+      ZAP_NODE_ID: witness-stablecoin
+      ZAP_CLAIM_FEED: claims/demo.json
+      DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
+      ZAP_WITNESS_DOMAIN: stablecoins
+    volumes:
+      - ../deepseek.md:/run/secrets/deepseek.md:ro

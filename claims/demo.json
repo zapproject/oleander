@@ -1,0 +1,23 @@
+[
+  {
+    "id": "claim:stablecoin:usdc-demo-001",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDC remained within 1% of 1 USD across the configured observation window.",
+    "sources": [
+      "https://www.coinbase.com/price/usd-coin",
+      "https://www.coingecko.com/en/coins/usd-coin"
+    ],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:stablecoin:reserve-attestation-demo-001",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The referenced reserve attestation document matches the expected hash.",
+    "sources": [
+      "https://www.circle.com/transparency"
+    ],
+    "livenessSeconds": 600
+  }
+]
