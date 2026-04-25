@@ -5,6 +5,7 @@ import { ClaimFeed } from "./services/claim-feed.js";
 import { Council } from "./services/council.js";
 import { DeepSeek } from "./services/deepseek.js";
 import { Scheduler } from "./services/scheduler.js";
+import { x402MockScenario } from "./services/x402-scenario.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -22,6 +23,7 @@ Commands:
   zap claims list
   zap deepseek smoke
   zap roles list
+  zap x402 scenario
   zap council hello
   zap council --once
   zap council --role <role-id> --once
@@ -63,6 +65,10 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
 
   if (command === "roles" && subcommand === "list") {
     return Effect.sync(() => printJson(WitnessRoles));
+  }
+
+  if (command === "x402" && subcommand === "scenario") {
+    return Effect.sync(() => printJson(x402MockScenario));
   }
 
   if (command === "deepseek" && subcommand === "smoke") {

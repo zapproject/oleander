@@ -5,6 +5,7 @@ Typed claim feeds for the witness harness.
 ## Files
 
 - [demo.json](demo.json): initial stablecoin claim pack.
+- [x402-mock.json](x402-mock.json): mock x402-funded work claim pack.
 
 ## Current Demo Claims
 

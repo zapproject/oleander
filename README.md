@@ -9,8 +9,10 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 - [src](src/README.md): CLI entrypoint, shared domain types, and Effect runtime wiring.
 - [src/services](src/services/README.md): Witness Council services, oracle reducer, gossip set, evidence adapters, economy receipts, and tests.
 - [claims](claims/README.md): Typed demo claim feed for stablecoin work.
+- [docs/x402-witness-economy.md](docs/x402-witness-economy.md): x402 payment/staking plan and mock scenario.
 - [Dockerfile](Dockerfile): Bun container image for witness clients.
 - [docker-compose.yml](docker-compose.yml): Local multi-witness harness.
+- [docker-compose.x402-mock.yml](docker-compose.x402-mock.yml): Mock x402-funded work scenario.
 - [.env.example](.env.example): Runtime config surface.
 
 ## Commands
@@ -22,6 +24,7 @@ bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
 bun run dev -- roles list
+bun run dev -- x402 scenario
 bun run dev -- council hello
 bun run dev -- council --once
 bun run dev -- council --role law --once
@@ -33,6 +36,12 @@ Docker testbed:
 
 ```bash
 docker compose up --build
+```
+
+x402 mock work scenario:
+
+```bash
+docker compose -f docker-compose.x402-mock.yml up --build
 ```
 
 ## Architecture
