@@ -43,7 +43,7 @@ docker compose up --build
 x402 mock work scenario:
 
 ```bash
-docker compose -f docker-compose.x402-mock.yml up --build
+./scripts/test-x402-mock.sh
 ```
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
