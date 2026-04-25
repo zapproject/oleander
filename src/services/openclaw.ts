@@ -1,11 +1,12 @@
 import { Context, Effect, Layer } from "effect";
-import type { ClaimResponse, ClaimSpec, Observation, WitnessRole } from "../domain.js";
+import type { ClaimResponse, ClaimSpec, EvidencePlan, Observation, WitnessRole } from "../domain.js";
 import { ConfigService } from "./config.js";
 import { DeepSeek } from "./deepseek.js";
 import { Signer } from "./signer.js";
 import { Validator } from "./validator.js";
 
 export interface OpenClawService {
+  readonly plan: (role: WitnessRole, claim: ClaimSpec) => Effect.Effect<EvidencePlan, Error>;
   readonly observe: (role: WitnessRole, claim: ClaimSpec) => Effect.Effect<Observation, Error>;
 }
 
@@ -29,7 +30,41 @@ const fallbackResponse = (claim: ClaimSpec): ClaimResponse => {
   }
 };
 
-const responseFromModel = (claim: ClaimSpec, content: string): ClaimResponse => {
+export const responseFromModel = (claim: ClaimSpec, content: string): ClaimResponse => {
+  const json = content.match(/\{[\s\S]*\}/);
+  if (json) {
+    try {
+      const parsed = JSON.parse(json[0]) as Partial<ClaimResponse>;
+      if (parsed.type === "too_early" && typeof parsed.reason === "string") {
+        return { type: "too_early", reason: parsed.reason };
+      }
+      if (parsed.type === "no_answer_possible" && typeof parsed.reason === "string") {
+        return { type: "no_answer_possible", reason: parsed.reason };
+      }
+      if (parsed.type === "yes_no" && typeof parsed.value === "boolean") {
+        return { type: "yes_no", value: parsed.value };
+      }
+      if (
+        parsed.type === "uint32_multi_value" &&
+        Array.isArray(parsed.values) &&
+        parsed.values.every((value) => typeof value === "number")
+      ) {
+        return { type: "uint32_multi_value", values: parsed.values };
+      }
+      if (parsed.type === "scalar_int" && typeof parsed.value === "number" && typeof parsed.decimals === "number") {
+        return { type: "scalar_int", value: parsed.value, decimals: parsed.decimals };
+      }
+      if (parsed.type === "categorical" && typeof parsed.value === "string") {
+        return { type: "categorical", value: parsed.value };
+      }
+      if (parsed.type === "hash_attestation" && typeof parsed.hash === "string") {
+        return { type: "hash_attestation", hash: parsed.hash };
+      }
+    } catch {
+      // Fall back to conservative text parsing below.
+    }
+  }
+
   const normalized = content.toLowerCase();
   if (normalized.includes("too early")) {
     return { type: "too_early", reason: "Council analysis marked the claim too early to resolve." };
@@ -44,6 +79,12 @@ const responseFromModel = (claim: ClaimSpec, content: string): ClaimResponse => 
   return fallbackResponse(claim);
 };
 
+const confidenceFor = (response: ClaimResponse): number => {
+  if (response.type === "no_answer_possible") return 0.2;
+  if (response.type === "too_early") return 0.3;
+  return 0.5;
+};
+
 export const OpenClawLive = Layer.effect(
   OpenClaw,
   Effect.gen(function* () {
@@ -53,9 +94,25 @@ export const OpenClawLive = Layer.effect(
     const validator = yield* Validator;
 
     return {
+      plan: (role, claim) =>
+        Effect.gen(function* () {
+          yield* validator.validateClaim(claim);
+          return {
+            claimId: claim.id,
+            roleId: role.id,
+            steps: [
+              `Apply ${role.title} policy to ${claim.kind} claim`,
+              "Inspect claim-provided sources",
+              "Ask model for constrained assessment",
+              "Validate response before signing observation"
+            ]
+          };
+        }),
+
       observe: (role, claim) =>
         Effect.gen(function* () {
           yield* validator.validateClaim(claim);
+          yield* Effect.sync(() => undefined);
 
           const content = yield* deepseek.complete([
             {
@@ -64,7 +121,11 @@ export const OpenClawLive = Layer.effect(
                 "You are a ZAP Witness Council agent.",
                 `Role: ${role.title}.`,
                 `Responsibility: ${role.responsibility}.`,
-                "Return a concise assessment. Prefer 'insufficient evidence' unless the claim can be evaluated from provided sources alone.",
+                "Return either concise rationale or a JSON ClaimResponse object.",
+                "Prefer no_answer_possible unless the claim can be evaluated from provided sources alone.",
+                "Valid JSON response examples:",
+                "{\"type\":\"yes_no\",\"value\":true}",
+                "{\"type\":\"no_answer_possible\",\"reason\":\"insufficient evidence\"}",
                 "Do not invent facts."
               ].join("\n")
             },
@@ -82,7 +143,7 @@ export const OpenClawLive = Layer.effect(
             witnessRole: role.id,
             nodeId: config.nodeId,
             response,
-            confidence: response.type === "no_answer_possible" ? 0.2 : 0.5,
+            confidence: confidenceFor(response),
             evidence: claim.sources.map((uri) => ({ uri, note: "Referenced by claim feed" })),
             rationale: content,
             observedAt: new Date().toISOString()

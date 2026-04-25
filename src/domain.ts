@@ -39,6 +39,12 @@ export interface EvidenceRef {
   readonly note: string;
 }
 
+export interface EvidencePlan {
+  readonly claimId: string;
+  readonly roleId: WitnessRoleId;
+  readonly steps: ReadonlyArray<string>;
+}
+
 export interface Observation {
   readonly claimId: string;
   readonly witnessRole: WitnessRoleId;
