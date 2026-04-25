@@ -55,7 +55,7 @@ TUI harness:
 bun run tui
 ```
 
-Press `r` to run the sponsor/oracle incentive scenario, `c` to clean up the Docker stack, and `q` to exit.
+Press `1`-`6` to choose a regime, `r` to run the sponsor/oracle incentive scenario, `c` to clean up the Docker stack, and `q` to exit. The TUI parses the feed and oracle output into claim counts, active claim IDs, oracle receipt totals, and USDC/ZAP incentive totals instead of showing raw JSON as the primary view.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server

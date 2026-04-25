@@ -18,11 +18,70 @@ interface StepState extends HarnessStep {
 interface HarnessState {
   running: boolean;
   runCount: number;
+  selectedRegime: number;
   logs: string[];
   steps: StepState[];
+  claims: ClaimSummary[];
+  reports: OracleReportSummary[];
 }
 
 const composeFile = resolve(process.cwd(), "docker-compose.x402-mock.yml");
+
+export type HarnessRegimeId = "full" | "sponsor" | "availability" | "attestation" | "peg" | "stablecoins";
+
+export interface HarnessRegime {
+  readonly id: HarnessRegimeId;
+  readonly label: string;
+  readonly stepIds: ReadonlyArray<string>;
+}
+
+export const harnessRegimes: ReadonlyArray<HarnessRegime> = [
+  {
+    id: "full",
+    label: "Full: sponsor + all oracle workers",
+    stepIds: ["build", "resource", "sponsor", "availability", "attestation", "peg", "cleanup"]
+  },
+  {
+    id: "sponsor",
+    label: "Sponsor only: paid feed gate",
+    stepIds: ["build", "resource", "sponsor", "cleanup"]
+  },
+  {
+    id: "availability",
+    label: "Availability oracle only",
+    stepIds: ["build", "resource", "sponsor", "availability", "cleanup"]
+  },
+  {
+    id: "attestation",
+    label: "Attestation oracle only",
+    stepIds: ["build", "resource", "sponsor", "attestation", "cleanup"]
+  },
+  {
+    id: "peg",
+    label: "Peg oracle only",
+    stepIds: ["build", "resource", "sponsor", "peg", "cleanup"]
+  },
+  {
+    id: "stablecoins",
+    label: "Stablecoin oracles: attestation + peg",
+    stepIds: ["build", "resource", "sponsor", "attestation", "peg", "cleanup"]
+  }
+];
+
+export interface ClaimSummary {
+  readonly id: string;
+  readonly kind: string;
+  readonly domain: string;
+  readonly statement: string;
+}
+
+export interface OracleReportSummary {
+  readonly nodeId: string;
+  readonly observationCount: number;
+  readonly stablecoinAtomic: string;
+  readonly zapAtomic: string;
+  readonly claimIds: ReadonlyArray<string>;
+}
 
 export const defaultHarnessEnv = {
   ZAP_SPONSORED_CLAIM_FEED: "claims/x402-ten-claims.json",
@@ -118,14 +177,155 @@ const statusText = (status: HarnessStepStatus): string => {
   return paint(glyph, color.dim);
 };
 
-const resetSteps = (): StepState[] =>
-  x402HarnessSteps().map((step) => ({ ...step, status: "pending", exitCode: undefined }));
+const stepCatalog = (): Map<string, HarnessStep> =>
+  new Map(x402HarnessSteps().map((step) => [step.id, step]));
+
+const stepsForRegime = (regime: HarnessRegime): StepState[] => {
+  const catalog = stepCatalog();
+  return regime.stepIds.map((id) => {
+    const step = catalog.get(id);
+    if (!step) throw new Error(`Unknown harness step: ${id}`);
+    return { ...step, status: "pending", exitCode: undefined };
+  });
+};
+
+const activeRegime = (state: HarnessState): HarnessRegime =>
+  harnessRegimes[state.selectedRegime] ?? harnessRegimes[0]!;
+
+const resetSteps = (state: HarnessState): StepState[] =>
+  stepsForRegime(activeRegime(state));
 
 const pushLog = (state: HarnessState, line: string) => {
   const compact = compactLine(line);
   if (!compact) return;
   state.logs.push(compact);
   if (state.logs.length > 90) state.logs.splice(0, state.logs.length - 90);
+};
+
+const isRawJsonLine = (line: string): boolean => {
+  const trimmed = line.trim();
+  return (
+    trimmed === "{" ||
+    trimmed === "}" ||
+    trimmed === "[" ||
+    trimmed === "]" ||
+    trimmed === "}," ||
+    trimmed === "]," ||
+    trimmed.startsWith("\"") ||
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("}") ||
+    trimmed.startsWith("[") ||
+    trimmed.startsWith("]") ||
+    trimmed.endsWith(",")
+  );
+};
+
+export const extractJsonValues = (text: string): unknown[] => {
+  const values: unknown[] = [];
+  for (let start = 0; start < text.length; start += 1) {
+    const opener = text[start];
+    if (opener !== "{" && opener !== "[") continue;
+    const closer = opener === "{" ? "}" : "]";
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = start; index < text.length; index += 1) {
+      const char = text[index];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === "\\") {
+          escaped = true;
+        } else if (char === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+      if (char === "\"") {
+        inString = true;
+      } else if (char === opener) {
+        depth += 1;
+      } else if (char === closer) {
+        depth -= 1;
+        if (depth === 0) {
+          const candidate = text.slice(start, index + 1);
+          try {
+            values.push(JSON.parse(candidate));
+            start = index;
+          } catch {
+            // Keep scanning; Docker may emit non-JSON bracketed log lines.
+          }
+          break;
+        }
+      }
+    }
+  }
+  return values;
+};
+
+const isClaimArray = (value: unknown): value is ClaimSummary[] =>
+  Array.isArray(value) &&
+  value.every((item) =>
+    typeof item === "object" &&
+    item !== null &&
+    typeof (item as { id?: unknown }).id === "string" &&
+    typeof (item as { kind?: unknown }).kind === "string" &&
+    typeof (item as { domain?: unknown }).domain === "string" &&
+    typeof (item as { statement?: unknown }).statement === "string"
+  );
+
+const summarizeOracleReport = (value: unknown): OracleReportSummary | undefined => {
+  if (typeof value !== "object" || value === null) return undefined;
+  const report = value as {
+    type?: unknown;
+    oracle?: { nodeId?: unknown; observationCount?: unknown };
+    observations?: Array<{ claimId?: unknown }>;
+    totals?: { stablecoinAtomic?: unknown; zapAtomic?: unknown };
+  };
+  if (report.type !== "x402_oracle_work") return undefined;
+  if (typeof report.oracle?.nodeId !== "string") return undefined;
+  if (typeof report.oracle.observationCount !== "number") return undefined;
+  if (typeof report.totals?.stablecoinAtomic !== "string") return undefined;
+  if (typeof report.totals.zapAtomic !== "string") return undefined;
+  return {
+    nodeId: report.oracle.nodeId,
+    observationCount: report.oracle.observationCount,
+    stablecoinAtomic: report.totals.stablecoinAtomic,
+    zapAtomic: report.totals.zapAtomic,
+    claimIds: Array.isArray(report.observations)
+      ? report.observations
+        .map((observation) => observation.claimId)
+        .filter((claimId): claimId is string => typeof claimId === "string")
+      : []
+  };
+};
+
+export const summarizeHarnessOutput = (
+  stepId: string,
+  output: string
+): { readonly claims?: ClaimSummary[]; readonly report?: OracleReportSummary } => {
+  for (const value of extractJsonValues(output)) {
+    if (stepId === "sponsor" && isClaimArray(value)) return { claims: value };
+    const report = summarizeOracleReport(value);
+    if (report) return { report };
+  }
+  return {};
+};
+
+const applyStructuredOutput = (state: HarnessState, step: StepState, output: string) => {
+  const summary = summarizeHarnessOutput(step.id, output);
+  if (summary.claims) {
+    state.claims = summary.claims;
+    pushLog(state, `parsed ${summary.claims.length} sponsored claims`);
+  }
+  if (summary.report) {
+    state.reports = state.reports.filter((report) => report.nodeId !== summary.report!.nodeId);
+    state.reports.push(summary.report);
+    pushLog(
+      state,
+      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} USDC atomic, ${summary.report.zapAtomic} ZAP atomic`
+    );
+  }
 };
 
 const write = (value: string) => {
@@ -137,6 +337,7 @@ const render = (state: HarnessState) => {
   write(`${paint("ZAP x402 Oracle Harness", `${color.bold}${color.cyan}`)}\n`);
   write(`${paint("Sponsor -> paid feed -> oracle workers -> signed work -> USDC/ZAP receipts", color.dim)}\n\n`);
   write(`Run: ${state.runCount}  State: ${state.running ? "running" : "idle"}\n`);
+  write(`Regime: ${activeRegime(state).label}\n`);
   write(`Sponsor: ${defaultHarnessEnv.X402_SPONSOR_ID}\n`);
   write(`Claim feed: ${defaultHarnessEnv.ZAP_SPONSORED_CLAIM_FEED}\n`);
   write(`Incentive: ${defaultHarnessEnv.X402_BOUNTY_ATOMIC} USDC atomic + ${defaultHarnessEnv.ZAP_REWARD_ATOMIC} ZAP atomic per observation\n\n`);
@@ -147,11 +348,47 @@ const render = (state: HarnessState) => {
     write(` ${statusText(step.status)} ${step.label}${exit}\n`);
   }
 
+  write("\nRegimes\n");
+  for (const [index, regime] of harnessRegimes.entries()) {
+    const marker = index === state.selectedRegime ? ">" : " ";
+    write(` ${marker} ${index + 1}. ${regime.label}\n`);
+  }
+
+  write("\nClaims\n");
+  if (state.claims.length === 0) {
+    write(` ${paint("No sponsored claims parsed yet.", color.dim)}\n`);
+  } else {
+    const byDomain = new Map<string, number>();
+    const byKind = new Map<string, number>();
+    for (const claim of state.claims) {
+      byDomain.set(claim.domain, (byDomain.get(claim.domain) ?? 0) + 1);
+      byKind.set(claim.kind, (byKind.get(claim.kind) ?? 0) + 1);
+    }
+    write(` Total: ${state.claims.length}  Domains: ${[...byDomain].map(([key, value]) => `${key}:${value}`).join(" ")}  Kinds: ${[...byKind].map(([key, value]) => `${key}:${value}`).join(" ")}\n`);
+    for (const claim of state.claims.slice(0, 10)) {
+      write(` - ${claim.id} [${claim.domain}/${claim.kind}]\n`);
+    }
+  }
+
+  write("\nOracle Incentives\n");
+  if (state.reports.length === 0) {
+    write(` ${paint("No oracle receipt reports parsed yet.", color.dim)}\n`);
+  } else {
+    const totalObservations = state.reports.reduce((sum, report) => sum + report.observationCount, 0);
+    const totalStablecoin = state.reports.reduce((sum, report) => sum + BigInt(report.stablecoinAtomic), 0n);
+    const totalZap = state.reports.reduce((sum, report) => sum + BigInt(report.zapAtomic), 0n);
+    write(` Total: ${totalObservations} observations, ${totalStablecoin.toString()} USDC atomic, ${totalZap.toString()} ZAP atomic\n`);
+    for (const report of state.reports) {
+      write(` - ${report.nodeId}: ${report.observationCount} obs | ${report.stablecoinAtomic} USDC atomic | ${report.zapAtomic} ZAP atomic\n`);
+      write(`   claims: ${report.claimIds.join(", ")}\n`);
+    }
+  }
+
   write("\nLive Log\n");
-  for (const line of state.logs.slice(-18)) {
+  for (const line of state.logs.slice(-8)) {
     write(` ${line}\n`);
   }
-  write(`\n${paint("Keys: r run/rerun | c cleanup | q quit | Ctrl-C exit", color.dim)}\n`);
+  write(`\n${paint("Keys: 1-6 select regime | r run/rerun | c cleanup | q quit | Ctrl-C exit", color.dim)}\n`);
 };
 
 const runCommand = (
@@ -171,8 +408,13 @@ const runCommand = (
       stdio: ["ignore", "pipe", "pipe"]
     });
 
+    let stdout = "";
     child.stdout.on("data", (data: Buffer) => {
-      for (const line of data.toString().split(/\r?\n/)) pushLog(state, line);
+      const text = data.toString();
+      stdout += text;
+      for (const line of text.split(/\r?\n/)) {
+        if (!isRawJsonLine(line)) pushLog(state, line);
+      }
       render(state);
     });
 
@@ -193,6 +435,7 @@ const runCommand = (
       const exitCode = code ?? 1;
       step.status = exitCode === 0 ? "passed" : "failed";
       step.exitCode = exitCode;
+      if (exitCode === 0) applyStructuredOutput(state, step, stdout);
       render(state);
       resolveStep(exitCode);
     });
@@ -210,7 +453,9 @@ const runScenario = async (state: HarnessState, env: NodeJS.ProcessEnv) => {
   state.running = true;
   state.runCount += 1;
   state.logs = ["starting sponsor/oracle run"];
-  state.steps = resetSteps();
+  state.claims = [];
+  state.reports = [];
+  state.steps = resetSteps(state);
   render(state);
 
   let failed = false;
@@ -241,9 +486,13 @@ export const runTuiHarness = async (options?: { readonly autoRun?: boolean }) =>
   const state: HarnessState = {
     running: false,
     runCount: 0,
+    selectedRegime: 0,
     logs: ["ready"],
-    steps: resetSteps()
+    steps: [],
+    claims: [],
+    reports: []
   };
+  state.steps = resetSteps(state);
 
   render(state);
 
@@ -265,5 +514,11 @@ export const runTuiHarness = async (options?: { readonly autoRun?: boolean }) =>
     }
     if (key === "r") void runScenario(state, env);
     if (key === "c") void cleanup(state, env);
+    const regimeIndex = Number(key) - 1;
+    if (!state.running && Number.isInteger(regimeIndex) && harnessRegimes[regimeIndex]) {
+      state.selectedRegime = regimeIndex;
+      state.steps = resetSteps(state);
+      render(state);
+    }
   });
 };
