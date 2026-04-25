@@ -1,7 +1,7 @@
 services:
   witness-council:
     build: .
-    command: ["node", "dist/cli.js", "council", "--once"]
+    command: ["bun", "dist/cli.js", "council", "--once"]
     environment:
       ZAP_NODE_ID: witness-council
       ZAP_CLAIM_FEED: claims/demo.json
@@ -11,7 +11,7 @@ services:
 
   witness-stablecoin:
     build: .
-    command: ["node", "dist/cli.js", "run", "--once"]
+    command: ["bun", "dist/cli.js", "run", "--once"]
     environment:
       ZAP_NODE_ID: witness-stablecoin
       ZAP_CLAIM_FEED: claims/demo.json

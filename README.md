@@ -7,13 +7,13 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 ## Commands
 
 ```bash
-npm install
-npm run build
-npm run dev -- claims list
-npm run dev -- roles list
-npm run dev -- council --once
-npm run dev -- council --role law --once
-npm run dev -- run --once
+bun install
+bun run build
+bun run dev -- claims list
+bun run dev -- roles list
+bun run dev -- council --once
+bun run dev -- council --role law --once
+bun run dev -- run --once
 ```
 
 Docker testbed:

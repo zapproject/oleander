@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { Effect } from "effect";
 import { WitnessRoles, type WitnessRoleId } from "./domain.js";
 import { ClaimFeed } from "./services/claim-feed.js";
