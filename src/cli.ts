@@ -64,7 +64,7 @@ const readPositiveIntFlag = (name: string): number | undefined => {
 
 const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Scheduler> = (() => {
   if (command === "tui") {
-    return Effect.promise(() => runTuiHarness({ autoRun: args.includes("--run") }));
+    return Effect.promise(() => runTuiHarness({ autoRun: args.includes("--run"), verbose: args.includes("--verbose") }));
   }
 
   if (command === "claims" && subcommand === "list") {

@@ -21,8 +21,8 @@ describe("tui harness", () => {
     ]);
   });
 
-  test("uses the ten claim sponsored feed by default", () => {
-    expect(defaultHarnessEnv.ZAP_SPONSORED_CLAIM_FEED).toBe("claims/x402-ten-claims.json");
+  test("uses the fifty claim sponsored feed by default", () => {
+    expect(defaultHarnessEnv.ZAP_SPONSORED_CLAIM_FEED).toBe("claims/x402-fifty-claims.json");
     expect(defaultHarnessEnv.X402_SPONSOR_ID).toBe("sponsor:x402:mock");
   });
 

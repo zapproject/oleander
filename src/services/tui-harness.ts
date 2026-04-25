@@ -19,7 +19,9 @@ interface HarnessState {
   running: boolean;
   runCount: number;
   selectedRegime: number;
+  showVerbose: boolean;
   logs: string[];
+  verboseLogs: string[];
   steps: StepState[];
   claims: ClaimSummary[];
   reports: OracleReportSummary[];
@@ -84,7 +86,7 @@ export interface OracleReportSummary {
 }
 
 export const defaultHarnessEnv = {
-  ZAP_SPONSORED_CLAIM_FEED: "claims/x402-ten-claims.json",
+  ZAP_SPONSORED_CLAIM_FEED: "claims/x402-fifty-claims.json",
   X402_SPONSOR_ID: "sponsor:x402:mock",
   X402_BOUNTY_ATOMIC: "1000000",
   ZAP_REWARD_ATOMIC: "1000000000000000000"
@@ -105,7 +107,7 @@ export const x402HarnessSteps = (file = composeFile): ReadonlyArray<HarnessStep>
   },
   {
     id: "sponsor",
-    label: "Sponsor publishes paid 10-claim feed",
+    label: "Sponsor publishes paid 50-claim feed",
     command: "docker",
     args: ["compose", "-f", file, "run", "--rm", "sponsor-feed"]
   },
@@ -200,6 +202,13 @@ const pushLog = (state: HarnessState, line: string) => {
   if (!compact) return;
   state.logs.push(compact);
   if (state.logs.length > 90) state.logs.splice(0, state.logs.length - 90);
+};
+
+const pushVerboseLog = (state: HarnessState, line: string) => {
+  const compact = compactLine(line);
+  if (!compact) return;
+  state.verboseLogs.push(compact);
+  if (state.verboseLogs.length > 240) state.verboseLogs.splice(0, state.verboseLogs.length - 240);
 };
 
 const isRawJsonLine = (line: string): boolean => {
@@ -317,11 +326,16 @@ const applyStructuredOutput = (state: HarnessState, step: StepState, output: str
   if (summary.claims) {
     state.claims = summary.claims;
     pushLog(state, `parsed ${summary.claims.length} sponsored claims`);
+    pushVerboseLog(state, `parsed ${summary.claims.length} sponsored claims`);
   }
   if (summary.report) {
     state.reports = state.reports.filter((report) => report.nodeId !== summary.report!.nodeId);
     state.reports.push(summary.report);
     pushLog(
+      state,
+      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} USDC atomic, ${summary.report.zapAtomic} ZAP atomic`
+    );
+    pushVerboseLog(
       state,
       `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} USDC atomic, ${summary.report.zapAtomic} ZAP atomic`
     );
@@ -338,6 +352,7 @@ const render = (state: HarnessState) => {
   write(`${paint("Sponsor -> paid feed -> oracle workers -> signed work -> USDC/ZAP receipts", color.dim)}\n\n`);
   write(`Run: ${state.runCount}  State: ${state.running ? "running" : "idle"}\n`);
   write(`Regime: ${activeRegime(state).label}\n`);
+  write(`Output: ${state.showVerbose ? "verbose raw tail" : "summary"}\n`);
   write(`Sponsor: ${defaultHarnessEnv.X402_SPONSOR_ID}\n`);
   write(`Claim feed: ${defaultHarnessEnv.ZAP_SPONSORED_CLAIM_FEED}\n`);
   write(`Incentive: ${defaultHarnessEnv.X402_BOUNTY_ATOMIC} USDC atomic + ${defaultHarnessEnv.ZAP_REWARD_ATOMIC} ZAP atomic per observation\n\n`);
@@ -365,9 +380,10 @@ const render = (state: HarnessState) => {
       byKind.set(claim.kind, (byKind.get(claim.kind) ?? 0) + 1);
     }
     write(` Total: ${state.claims.length}  Domains: ${[...byDomain].map(([key, value]) => `${key}:${value}`).join(" ")}  Kinds: ${[...byKind].map(([key, value]) => `${key}:${value}`).join(" ")}\n`);
-    for (const claim of state.claims.slice(0, 10)) {
+    for (const claim of state.claims.slice(0, 14)) {
       write(` - ${claim.id} [${claim.domain}/${claim.kind}]\n`);
     }
+    if (state.claims.length > 14) write(` ${paint(`... ${state.claims.length - 14} more claims`, color.dim)}\n`);
   }
 
   write("\nOracle Incentives\n");
@@ -380,15 +396,18 @@ const render = (state: HarnessState) => {
     write(` Total: ${totalObservations} observations, ${totalStablecoin.toString()} USDC atomic, ${totalZap.toString()} ZAP atomic\n`);
     for (const report of state.reports) {
       write(` - ${report.nodeId}: ${report.observationCount} obs | ${report.stablecoinAtomic} USDC atomic | ${report.zapAtomic} ZAP atomic\n`);
-      write(`   claims: ${report.claimIds.join(", ")}\n`);
+      const visibleClaims = report.claimIds.slice(0, 6).join(", ");
+      const remaining = report.claimIds.length > 6 ? ` ... +${report.claimIds.length - 6}` : "";
+      write(`   claims: ${visibleClaims}${remaining}\n`);
     }
   }
 
-  write("\nLive Log\n");
-  for (const line of state.logs.slice(-8)) {
+  write(`\n${state.showVerbose ? "Verbose Output" : "Live Log"}\n`);
+  const activeLogs = state.showVerbose ? state.verboseLogs : state.logs;
+  for (const line of activeLogs.slice(state.showVerbose ? -18 : -8)) {
     write(` ${line}\n`);
   }
-  write(`\n${paint("Keys: 1-6 select regime | r run/rerun | c cleanup | q quit | Ctrl-C exit", color.dim)}\n`);
+  write(`\n${paint("Keys: 1-6 select regime | r run/rerun | v verbose | c cleanup | q quit | Ctrl-C exit", color.dim)}\n`);
 };
 
 const runCommand = (
@@ -399,7 +418,9 @@ const runCommand = (
   new Promise((resolveStep) => {
     step.status = "running";
     step.exitCode = undefined;
-    pushLog(state, `$ ${step.command} ${step.args.join(" ")}`);
+    const commandLine = `$ ${step.command} ${step.args.join(" ")}`;
+    pushLog(state, commandLine);
+    pushVerboseLog(state, commandLine);
     render(state);
 
     const child = spawn(step.command, [...step.args], {
@@ -413,18 +434,23 @@ const runCommand = (
       const text = data.toString();
       stdout += text;
       for (const line of text.split(/\r?\n/)) {
+        pushVerboseLog(state, line);
         if (!isRawJsonLine(line)) pushLog(state, line);
       }
       render(state);
     });
 
     child.stderr.on("data", (data: Buffer) => {
-      for (const line of data.toString().split(/\r?\n/)) pushLog(state, line);
+      for (const line of data.toString().split(/\r?\n/)) {
+        pushVerboseLog(state, line);
+        pushLog(state, line);
+      }
       render(state);
     });
 
     child.on("error", (error) => {
       pushLog(state, `process error: ${error.message}`);
+      pushVerboseLog(state, `process error: ${error.message}`);
       step.status = "failed";
       step.exitCode = 1;
       render(state);
@@ -453,6 +479,7 @@ const runScenario = async (state: HarnessState, env: NodeJS.ProcessEnv) => {
   state.running = true;
   state.runCount += 1;
   state.logs = ["starting sponsor/oracle run"];
+  state.verboseLogs = ["starting sponsor/oracle run"];
   state.claims = [];
   state.reports = [];
   state.steps = resetSteps(state);
@@ -475,7 +502,7 @@ const runScenario = async (state: HarnessState, env: NodeJS.ProcessEnv) => {
   render(state);
 };
 
-export const runTuiHarness = async (options?: { readonly autoRun?: boolean }) => {
+export const runTuiHarness = async (options?: { readonly autoRun?: boolean; readonly verbose?: boolean }) => {
   const env = {
     ...process.env,
     ...Object.fromEntries(
@@ -487,7 +514,9 @@ export const runTuiHarness = async (options?: { readonly autoRun?: boolean }) =>
     running: false,
     runCount: 0,
     selectedRegime: 0,
+    showVerbose: options?.verbose ?? false,
     logs: ["ready"],
+    verboseLogs: ["ready"],
     steps: [],
     claims: [],
     reports: []
@@ -514,6 +543,10 @@ export const runTuiHarness = async (options?: { readonly autoRun?: boolean }) =>
     }
     if (key === "r") void runScenario(state, env);
     if (key === "c") void cleanup(state, env);
+    if (key === "v") {
+      state.showVerbose = !state.showVerbose;
+      render(state);
+    }
     const regimeIndex = Number(key) - 1;
     if (!state.running && Number.isInteger(regimeIndex) && harnessRegimes[regimeIndex]) {
       state.selectedRegime = regimeIndex;

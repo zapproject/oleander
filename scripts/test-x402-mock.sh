@@ -4,7 +4,7 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 COMPOSE_FILE="$ROOT_DIR/docker-compose.x402-mock.yml"
 
-export ZAP_SPONSORED_CLAIM_FEED="${ZAP_SPONSORED_CLAIM_FEED:-claims/x402-ten-claims.json}"
+export ZAP_SPONSORED_CLAIM_FEED="${ZAP_SPONSORED_CLAIM_FEED:-claims/x402-fifty-claims.json}"
 export X402_SPONSOR_ID="${X402_SPONSOR_ID:-sponsor:x402:mock}"
 export X402_BOUNTY_ATOMIC="${X402_BOUNTY_ATOMIC:-1000000}"
 export ZAP_REWARD_ATOMIC="${ZAP_REWARD_ATOMIC:-1000000000000000000}"

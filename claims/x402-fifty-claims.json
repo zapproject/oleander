@@ -1,0 +1,402 @@
+[
+  {
+    "id": "claim:x402:50:usdc-peg-001",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDC remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdc-peg-001"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usdt-peg-002",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDT remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdt-peg-002"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:dai-peg-003",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "DAI remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/dai-peg-003"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:pyusd-peg-004",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "PYUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/pyusd-peg-004"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:lusd-peg-005",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "LUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/lusd-peg-005"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:frax-peg-006",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "FRAX remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/frax-peg-006"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:tusd-peg-007",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "TUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/tusd-peg-007"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usdp-peg-008",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDP remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdp-peg-008"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usdd-peg-009",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdd-peg-009"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usde-peg-010",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDe remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usde-peg-010"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:crvusd-peg-011",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "crvUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/crvusd-peg-011"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:gho-peg-012",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "GHO remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/gho-peg-012"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usds-peg-013",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDS remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usds-peg-013"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:fdusd-peg-014",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "FDUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/fdusd-peg-014"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:usdy-peg-015",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDY remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdy-peg-015"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:eurs-peg-016",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "EURS remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/eurs-peg-016"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:eurt-peg-017",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "EURT remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/eurt-peg-017"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:ageur-peg-018",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "agEUR remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/ageur-peg-018"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:susd-peg-019",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "sUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/susd-peg-019"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:musd-peg-020",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "mUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/musd-peg-020"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:50:circle-attestation-021",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Circle reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/circle-attestation-021"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:tether-attestation-022",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Tether reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/tether-attestation-022"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:maker-attestation-023",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Maker reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/maker-attestation-023"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:paxos-attestation-024",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Paxos reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/paxos-attestation-024"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:paypal-attestation-025",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The PayPal stablecoin attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/paypal-attestation-025"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:liquity-attestation-026",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Liquity collateral report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/liquity-attestation-026"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:frax-attestation-027",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Frax collateral report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/frax-attestation-027"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:curve-attestation-028",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Curve stablecoin collateral report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/curve-attestation-028"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:aave-attestation-029",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Aave GHO collateral report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/aave-attestation-029"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:ethena-attestation-030",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Ethena reserve report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/ethena-attestation-030"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:firstdigital-attestation-031",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The First Digital reserve report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/firstdigital-attestation-031"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:ondo-attestation-032",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Ondo reserve report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/ondo-attestation-032"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:angle-attestation-033",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Angle reserve report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/angle-attestation-033"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:synthetix-attestation-034",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Synthetix stablecoin report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/synthetix-attestation-034"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:mstable-attestation-035",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The mStable reserve report in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/mstable-attestation-035"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:50:claim-api-availability-036",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The paid claim feed API was available after the mock x402 payment header was supplied.",
+    "sources": ["local-evidence://availability/claim-api-036"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:evidence-api-availability-037",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The evidence adapter API was available to oracle workers during the mock observation window.",
+    "sources": ["local-evidence://availability/evidence-api-037"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:gossip-api-availability-038",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The gossip transport API was available to oracle workers during the mock observation window.",
+    "sources": ["local-evidence://availability/gossip-api-038"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:facilitator-availability-039",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The x402 facilitator service was available to verify and settle mock payment payloads.",
+    "sources": ["local-evidence://availability/facilitator-039"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:resource-availability-040",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The paid resource service was available to serve claims after payment authorization.",
+    "sources": ["local-evidence://availability/resource-040"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:signer-availability-041",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The oracle signer service produced signatures for observations during the mock run.",
+    "sources": ["local-evidence://availability/signer-041"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:validator-availability-042",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The typed validator service accepted valid claims and rejected malformed work during the mock run.",
+    "sources": ["local-evidence://availability/validator-042"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:openclaw-availability-043",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The OpenCLAW evidence workflow completed observations for eligible claims during the mock run.",
+    "sources": ["local-evidence://availability/openclaw-043"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:scheduler-availability-044",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The scheduler path dispatched the oracle run without dropping eligible claims.",
+    "sources": ["local-evidence://availability/scheduler-044"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:docker-network-availability-045",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The Docker compose network allowed sponsor, resource, facilitator, and oracle containers to communicate.",
+    "sources": ["local-evidence://availability/docker-network-045"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:receipt-pipeline-availability-046",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The incentive receipt pipeline produced work, USDC bounty, and ZAP reward receipts.",
+    "sources": ["local-evidence://availability/receipt-pipeline-046"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:payment-header-availability-047",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The protected claim feed accepted the configured mock x402 payment header.",
+    "sources": ["local-evidence://availability/payment-header-047"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:claim-filter-availability-048",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The oracle claim filters selected the expected domain and kind subsets during the mock run.",
+    "sources": ["local-evidence://availability/claim-filter-048"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:report-parser-availability-049",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The TUI report parser summarized oracle receipts without exposing raw JSON as the primary view.",
+    "sources": ["local-evidence://availability/report-parser-049"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:50:cleanup-availability-050",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The harness cleanup path removed the mock x402 Docker stack after the run completed.",
+    "sources": ["local-evidence://availability/cleanup-050"],
+    "livenessSeconds": 60
+  }
+]

@@ -77,4 +77,4 @@ All worker services run in mock model mode. They still execute the real claim fe
 
 The mock follows the Paybot-style compose story: facilitator service, protected resource service, client workers, and a shared Docker network. The mock `X-PAYMENT` header stands in for a real signed x402 payment payload until the real SDK/facilitator integration is added.
 
-The default script uses [claims/x402-ten-claims.json](../claims/x402-ten-claims.json), which gives the sponsor 10 paid claims and routes them to the matching oracle workers.
+The default script uses [claims/x402-fifty-claims.json](../claims/x402-fifty-claims.json), which gives the sponsor 50 paid claims and routes them to the matching oracle workers.
