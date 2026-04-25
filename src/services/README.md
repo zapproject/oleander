@@ -16,6 +16,8 @@ Effect services for the ZAP Witness Council harness.
 - [scheduler.ts](scheduler.ts): cron-style witness schedule and daemon loop support.
 - [council.ts](council.ts): council role execution over claims.
 - [economy.ts](economy.ts): work receipts, stablecoin bounty receipts, ZAP reward receipts, burn/treasury policy.
+- [x402-scenario.ts](x402-scenario.ts): mock x402 funding, staking, payment, and council incentive receipts.
+- [x402-mock-server.ts](x402-mock-server.ts): Paybot-style mock facilitator and protected claim resource.
 - [adversarial.test.ts](adversarial.test.ts): integrated adversarial coverage.
 
 ## Boundaries

@@ -6,6 +6,7 @@ import { Council } from "./services/council.js";
 import { DeepSeek } from "./services/deepseek.js";
 import { Scheduler } from "./services/scheduler.js";
 import { x402MockScenario } from "./services/x402-scenario.js";
+import { serveX402FacilitatorMock, serveX402ResourceMock } from "./services/x402-mock-server.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -24,6 +25,8 @@ Commands:
   zap deepseek smoke
   zap roles list
   zap x402 scenario
+  zap x402 serve facilitator
+  zap x402 serve resource
   zap council hello
   zap council --once
   zap council --role <role-id> --once
@@ -69,6 +72,22 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
 
   if (command === "x402" && subcommand === "scenario") {
     return Effect.sync(() => printJson(x402MockScenario));
+  }
+
+  if (command === "x402" && subcommand === "serve" && args[2] === "facilitator") {
+    return Effect.sync(() => serveX402FacilitatorMock(Number(process.env.X402_FACILITATOR_PORT ?? 8403))).pipe(
+      Effect.zipRight(Effect.never)
+    );
+  }
+
+  if (command === "x402" && subcommand === "serve" && args[2] === "resource") {
+    return Effect.sync(() =>
+      serveX402ResourceMock({
+        port: Number(process.env.X402_RESOURCE_PORT ?? 8404),
+        claimFeedPath: process.env.ZAP_CLAIM_FEED ?? "claims/x402-mock.json",
+        paymentHeader: process.env.X402_PAYMENT_HEADER ?? "mock-paid"
+      })
+    ).pipe(Effect.zipRight(Effect.never));
   }
 
   if (command === "deepseek" && subcommand === "smoke") {

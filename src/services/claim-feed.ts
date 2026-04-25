@@ -76,8 +76,19 @@ export const ClaimFeedLive = Layer.effect(
   Effect.gen(function* () {
     const config = yield* ConfigService;
     return {
-      list: Effect.try({
-        try: () => parseClaimFeed(readFileSync(resolve(process.cwd(), config.claimFeedPath), "utf8")),
+      list: Effect.tryPromise({
+        try: async () => {
+          if (config.claimFeedPath.startsWith("http://") || config.claimFeedPath.startsWith("https://")) {
+            const response = await fetch(config.claimFeedPath, {
+              headers: config.x402PaymentHeader ? { "X-PAYMENT": config.x402PaymentHeader } : undefined
+            });
+            if (!response.ok) {
+              throw new Error(`Claim feed HTTP ${response.status}: ${await response.text()}`);
+            }
+            return parseClaimFeed(await response.text());
+          }
+          return parseClaimFeed(readFileSync(resolve(process.cwd(), config.claimFeedPath), "utf8"));
+        },
         catch: (error) => error instanceof Error ? error : new Error(String(error))
       })
     };

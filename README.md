@@ -25,6 +25,8 @@ bun run dev -- claims list
 bun run dev -- deepseek smoke
 bun run dev -- roles list
 bun run dev -- x402 scenario
+bun run dev -- x402 serve facilitator
+bun run dev -- x402 serve resource
 bun run dev -- council hello
 bun run dev -- council --once
 bun run dev -- council --role law --once
@@ -43,6 +45,11 @@ x402 mock work scenario:
 ```bash
 docker compose -f docker-compose.x402-mock.yml up --build
 ```
+
+The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
+creation, verification, and settlement calls; a protected resource server
+returns `402 Payment Required` until a witness supplies the mock `X-PAYMENT`
+header; council clients then fetch the paid claim feed and process work.
 
 ## Architecture
 

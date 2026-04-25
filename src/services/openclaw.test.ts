@@ -31,6 +31,7 @@ const config: AppConfig = {
   claimScanCron: "*/2 * * * *",
   livenessWatchCron: "*/1 * * * *",
   claimScanIntervalMs: 120000,
+  x402PaymentHeader: undefined,
   deepseekApiKey: undefined,
   deepseekBaseUrl: "https://api.deepseek.com",
   deepseekModel: "deepseek-v4-pro",

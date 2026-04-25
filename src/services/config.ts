@@ -10,6 +10,7 @@ export interface AppConfig {
   readonly claimScanCron: string;
   readonly livenessWatchCron: string;
   readonly claimScanIntervalMs: number;
+  readonly x402PaymentHeader: string | undefined;
   readonly deepseekApiKey: string | undefined;
   readonly deepseekBaseUrl: string;
   readonly deepseekModel: string;
@@ -66,6 +67,7 @@ export const ConfigLive = Layer.effect(
       claimScanCron: process.env.ZAP_CLAIM_SCAN_CRON ?? "*/2 * * * *",
       livenessWatchCron: process.env.ZAP_LIVENESS_WATCH_CRON ?? "*/1 * * * *",
       claimScanIntervalMs: positiveInt(process.env.ZAP_CLAIM_SCAN_INTERVAL_MS, 120_000),
+      x402PaymentHeader: process.env.X402_PAYMENT_HEADER,
       deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? readKeyFile(keyFile),
       deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
       deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-v4-pro",

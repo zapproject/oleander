@@ -51,11 +51,17 @@ docker compose -f docker-compose.x402-mock.yml up --build
 Services:
 
 ```text
+x402-facilitator
+  mock facilitator with /payments/create, /verify, /settle, /health
+
+x402-resource
+  protected claim feed resource; returns HTTP 402 unless X-PAYMENT is present
+
 x402-scenario
   prints the funding/staking/payment scenario
 
 sponsor-feed
-  publishes the typed x402 mock claim feed
+  fetches the typed x402 mock claim feed through the paid resource path
 
 witness-peg
   works stablecoin peg yes/no claims
@@ -68,3 +74,5 @@ witness-availability
 ```
 
 All worker services run in mock model mode. They still execute the real claim feed, evidence normalization, validation, signing, and scheduled witness path.
+
+The mock follows the Paybot-style compose story: facilitator service, protected resource service, client workers, and a shared Docker network. The mock `X-PAYMENT` header stands in for a real signed x402 payment payload until the real SDK/facilitator integration is added.
