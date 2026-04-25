@@ -8,6 +8,7 @@ import { Scheduler } from "./services/scheduler.js";
 import { x402MockScenario } from "./services/x402-scenario.js";
 import { serveX402FacilitatorMock, serveX402ResourceMock } from "./services/x402-mock-server.js";
 import { x402WorkReportFromObservations } from "./services/x402-work.js";
+import { runTuiHarness } from "./services/tui-harness.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -25,6 +26,7 @@ Commands:
   zap claims list
   zap deepseek smoke
   zap roles list
+  zap tui [--run]
   zap x402 scenario
   zap x402 work --once
   zap x402 serve facilitator
@@ -61,6 +63,10 @@ const readPositiveIntFlag = (name: string): number | undefined => {
 };
 
 const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Scheduler> = (() => {
+  if (command === "tui") {
+    return Effect.promise(() => runTuiHarness({ autoRun: args.includes("--run") }));
+  }
+
   if (command === "claims" && subcommand === "list") {
     return Effect.gen(function* () {
       const feed = yield* ClaimFeed;

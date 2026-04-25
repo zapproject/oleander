@@ -9,6 +9,7 @@
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target bun",
     "dev": "bun run src/cli.ts",
+    "tui": "bun run src/cli.ts tui",
     "start": "bun dist/cli.js",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"

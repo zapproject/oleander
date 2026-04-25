@@ -25,6 +25,7 @@ bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
 bun run dev -- roles list
+bun run dev -- tui
 bun run dev -- x402 scenario
 bun run dev -- x402 work --once
 bun run dev -- x402 serve facilitator
@@ -47,6 +48,14 @@ x402 mock work scenario:
 ```bash
 ./scripts/test-x402-mock.sh
 ```
+
+TUI harness:
+
+```bash
+bun run tui
+```
+
+Press `r` to run the sponsor/oracle incentive scenario, `c` to clean up the Docker stack, and `q` to exit.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server
