@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Effect } from "effect";
+import { WitnessRoles, type WitnessRoleId } from "./domain.js";
 import { ClaimFeed } from "./services/claim-feed.js";
 import { Council } from "./services/council.js";
 import { AppLayer } from "./runtime.js";
@@ -17,7 +18,9 @@ const help = Effect.sync(() => {
 
 Commands:
   zap claims list
+  zap roles list
   zap council --once
+  zap council --role <role-id> --once
   zap run --once
 
 Environment:
@@ -29,6 +32,15 @@ Environment:
 `);
 });
 
+const readFlag = (name: string): string | undefined => {
+  const index = args.indexOf(name);
+  if (index === -1) return undefined;
+  return args[index + 1];
+};
+
+const isWitnessRoleId = (value: string): value is WitnessRoleId =>
+  WitnessRoles.some((role) => role.id === value);
+
 const program: Effect.Effect<void, Error, ClaimFeed | Council> = (() => {
   if (command === "claims" && subcommand === "list") {
     return Effect.gen(function* () {
@@ -37,10 +49,22 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council> = (() => {
     });
   }
 
+  if (command === "roles" && subcommand === "list") {
+    return Effect.sync(() => printJson(WitnessRoles));
+  }
+
   if (command === "council" && args.includes("--once")) {
     return Effect.gen(function* () {
       const council = yield* Council;
-      printJson(yield* council.runAll);
+      const roleId = readFlag("--role");
+      if (roleId) {
+        if (!isWitnessRoleId(roleId)) {
+          throw new Error(`Unknown witness role: ${roleId}`);
+        }
+        printJson(yield* council.runRole(roleId));
+      } else {
+        printJson(yield* council.runAll);
+      }
     });
   }
 

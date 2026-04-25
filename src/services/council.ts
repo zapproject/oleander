@@ -1,11 +1,12 @@
 import { Context, Effect, Layer } from "effect";
-import { WitnessRoles, type Observation } from "../domain.js";
+import { WitnessRoles, type Observation, type WitnessRoleId } from "../domain.js";
 import { ClaimFeed } from "./claim-feed.js";
 import { ConfigService } from "./config.js";
 import { OpenClaw } from "./openclaw.js";
 
 export interface CouncilService {
   readonly runAll: Effect.Effect<ReadonlyArray<Observation>, Error>;
+  readonly runRole: (roleId: WitnessRoleId) => Effect.Effect<ReadonlyArray<Observation>, Error>;
   readonly runWitness: Effect.Effect<ReadonlyArray<Observation>, Error>;
 }
 
@@ -40,6 +41,19 @@ export const CouncilLive = Layer.effect(
         }
         return observations;
       }),
+
+      runRole: (roleId) =>
+        Effect.gen(function* () {
+          const role = WitnessRoles.find((item) => item.id === roleId);
+          if (!role) throw new Error(`Unknown witness role: ${roleId}`);
+
+          const claims = yield* claimsForPolicy;
+          const observations: Observation[] = [];
+          for (const claim of claims) {
+            observations.push(yield* openclaw.observe(role, claim));
+          }
+          return observations;
+        }),
 
       runWitness: Effect.gen(function* () {
         const claims = yield* claimsForPolicy;

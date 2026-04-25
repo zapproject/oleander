@@ -10,7 +10,9 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 npm install
 npm run build
 npm run dev -- claims list
+npm run dev -- roles list
 npm run dev -- council --once
+npm run dev -- council --role law --once
 npm run dev -- run --once
 ```
 
