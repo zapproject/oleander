@@ -7,6 +7,7 @@ import { DeepSeek } from "./services/deepseek.js";
 import { Scheduler } from "./services/scheduler.js";
 import { x402MockScenario } from "./services/x402-scenario.js";
 import { serveX402FacilitatorMock, serveX402ResourceMock } from "./services/x402-mock-server.js";
+import { x402WorkReportFromObservations } from "./services/x402-work.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -25,6 +26,7 @@ Commands:
   zap deepseek smoke
   zap roles list
   zap x402 scenario
+  zap x402 work --once
   zap x402 serve facilitator
   zap x402 serve resource
   zap council hello
@@ -72,6 +74,18 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
 
   if (command === "x402" && subcommand === "scenario") {
     return Effect.sync(() => printJson(x402MockScenario));
+  }
+
+  if (command === "x402" && subcommand === "work" && args.includes("--once")) {
+    return Effect.gen(function* () {
+      const council = yield* Council;
+      const observations = yield* council.runWitness;
+      printJson(x402WorkReportFromObservations(observations, {
+        sponsorId: process.env.X402_SPONSOR_ID,
+        bountyPerObservationAtomic: process.env.X402_BOUNTY_ATOMIC,
+        zapRewardPerObservationAtomic: process.env.ZAP_REWARD_ATOMIC
+      }));
+    });
   }
 
   if (command === "x402" && subcommand === "serve" && args[2] === "facilitator") {

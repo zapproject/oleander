@@ -19,7 +19,7 @@ services:
       - "8404:8404"
     environment:
       X402_RESOURCE_PORT: 8404
-      ZAP_CLAIM_FEED: claims/x402-mock.json
+      ZAP_CLAIM_FEED: ${ZAP_SPONSORED_CLAIM_FEED:-claims/x402-mock.json}
       X402_PAYMENT_HEADER: mock-paid
     depends_on:
       x402-facilitator:
@@ -47,13 +47,16 @@ services:
 
   witness-peg:
     build: .
-    command: ["bun", "dist/cli.js", "run", "--daemon", "--ticks", "1"]
+    command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
       ZAP_NODE_ID: witness-peg
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: stablecoins
       ZAP_WITNESS_KINDS: yes_no
       X402_PAYMENT_HEADER: mock-paid
+      X402_SPONSOR_ID: ${X402_SPONSOR_ID:-sponsor:x402:mock}
+      X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
+      ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
       DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
     volumes:
@@ -64,13 +67,16 @@ services:
 
   witness-attestation:
     build: .
-    command: ["bun", "dist/cli.js", "run", "--daemon", "--ticks", "1"]
+    command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
       ZAP_NODE_ID: witness-attestation
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: stablecoins
       ZAP_WITNESS_KINDS: hash_attestation
       X402_PAYMENT_HEADER: mock-paid
+      X402_SPONSOR_ID: ${X402_SPONSOR_ID:-sponsor:x402:mock}
+      X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
+      ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
       DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
     volumes:
@@ -81,13 +87,16 @@ services:
 
   witness-availability:
     build: .
-    command: ["bun", "dist/cli.js", "run", "--daemon", "--ticks", "1"]
+    command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
       ZAP_NODE_ID: witness-availability
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: availability
       ZAP_WITNESS_KINDS: yes_no
       X402_PAYMENT_HEADER: mock-paid
+      X402_SPONSOR_ID: ${X402_SPONSOR_ID:-sponsor:x402:mock}
+      X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
+      ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
       DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
     volumes:

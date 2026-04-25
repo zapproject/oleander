@@ -45,7 +45,7 @@ x402 Facilitator
 Run the local x402 witness work scenario:
 
 ```bash
-docker compose -f docker-compose.x402-mock.yml up --build
+./scripts/test-x402-mock.sh
 ```
 
 Services:
@@ -64,15 +64,17 @@ sponsor-feed
   fetches the typed x402 mock claim feed through the paid resource path
 
 witness-peg
-  works stablecoin peg yes/no claims
+  works stablecoin peg yes/no claims and emits incentive receipts
 
 witness-attestation
-  works reserve hash-attestation claims
+  works reserve hash-attestation claims and emits incentive receipts
 
 witness-availability
-  works paid endpoint availability claims
+  works paid endpoint availability claims and emits incentive receipts
 ```
 
-All worker services run in mock model mode. They still execute the real claim feed, evidence normalization, validation, signing, and scheduled witness path.
+All worker services run in mock model mode. They still execute the real claim feed, evidence normalization, validation, signing, work receipt, USDC bounty receipt, and ZAP reward receipt path.
 
 The mock follows the Paybot-style compose story: facilitator service, protected resource service, client workers, and a shared Docker network. The mock `X-PAYMENT` header stands in for a real signed x402 payment payload until the real SDK/facilitator integration is added.
+
+The default script uses [claims/x402-ten-claims.json](../claims/x402-ten-claims.json), which gives the sponsor 10 paid claims and routes them to the matching oracle workers.

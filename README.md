@@ -13,6 +13,7 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 - [Dockerfile](Dockerfile): Bun container image for witness clients.
 - [docker-compose.yml](docker-compose.yml): Local multi-witness harness.
 - [docker-compose.x402-mock.yml](docker-compose.x402-mock.yml): Mock x402-funded work scenario.
+- [scripts/test-x402-mock.sh](scripts/test-x402-mock.sh): one-command sponsor/oracle incentive run over 10 mock claims.
 - [.env.example](.env.example): Runtime config surface.
 
 ## Commands
@@ -25,6 +26,7 @@ bun run dev -- claims list
 bun run dev -- deepseek smoke
 bun run dev -- roles list
 bun run dev -- x402 scenario
+bun run dev -- x402 work --once
 bun run dev -- x402 serve facilitator
 bun run dev -- x402 serve resource
 bun run dev -- council hello

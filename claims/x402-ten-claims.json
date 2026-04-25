@@ -1,0 +1,82 @@
+[
+  {
+    "id": "claim:x402:ten:usdc-peg-001",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDC remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdc-peg-001"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:ten:usdt-peg-002",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "USDT remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/usdt-peg-002"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:ten:dai-peg-003",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "DAI remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/dai-peg-003"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:ten:pyusd-peg-004",
+    "kind": "yes_no",
+    "domain": "stablecoins",
+    "statement": "PYUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/pyusd-peg-004"],
+    "livenessSeconds": 120
+  },
+  {
+    "id": "claim:x402:ten:circle-attestation-005",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Circle reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/circle-attestation-005"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:ten:tether-attestation-006",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Tether reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/tether-attestation-006"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:ten:maker-attestation-007",
+    "kind": "hash_attestation",
+    "domain": "stablecoins",
+    "statement": "The Maker reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/maker-attestation-007"],
+    "livenessSeconds": 300
+  },
+  {
+    "id": "claim:x402:ten:claim-api-availability-008",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The paid claim feed API was available after the mock x402 payment header was supplied.",
+    "sources": ["local-evidence://availability/claim-api-008"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:ten:evidence-api-availability-009",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The evidence adapter API was available to oracle workers during the mock observation window.",
+    "sources": ["local-evidence://availability/evidence-api-009"],
+    "livenessSeconds": 60
+  },
+  {
+    "id": "claim:x402:ten:gossip-api-availability-010",
+    "kind": "yes_no",
+    "domain": "availability",
+    "statement": "The gossip transport API was available to oracle workers during the mock observation window.",
+    "sources": ["local-evidence://availability/gossip-api-010"],
+    "livenessSeconds": 60
+  }
+]
