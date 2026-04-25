@@ -3,6 +3,7 @@ import { Effect, Layer } from "effect";
 import type { ClaimSpec, WitnessRole } from "../domain.js";
 import { ConfigService, type AppConfig } from "./config.js";
 import { DeepSeek } from "./deepseek.js";
+import { Evidence } from "./evidence.js";
 import { OpenClaw, OpenClawLive, responseFromModel } from "./openclaw.js";
 import { SignerLive } from "./signer.js";
 import { ValidatorLive } from "./validator.js";
@@ -42,6 +43,23 @@ const runOpenClaw = <A>(effect: Effect.Effect<A, Error, OpenClaw>, modelOutput: 
             Layer.succeed(ConfigService, config),
             ValidatorLive,
             SignerLive.pipe(Layer.provide(Layer.succeed(ConfigService, config))),
+            Layer.succeed(Evidence, {
+              collect: () =>
+                Effect.succeed([
+                  {
+                    uri: "https://example.com/usdc",
+                    adapter: "http",
+                    ok: true,
+                    hash: "a".repeat(64),
+                    contentType: "text/plain",
+                    status: 200,
+                    bytes: 5,
+                    snippet: "hello",
+                    error: undefined,
+                    observedAt: "2026-01-01T00:00:00.000Z"
+                  }
+                ])
+            }),
             Layer.succeed(DeepSeek, {
               complete: () => Effect.succeed(modelOutput),
               smoke: Effect.succeed("mock")
@@ -92,7 +110,7 @@ describe("OpenClaw", () => {
     expect(observation.claimId).toBe(claim.id);
     expect(observation.witnessRole).toBe(role.id);
     expect(observation.response).toEqual({ type: "yes_no", value: true });
-    expect(observation.evidence).toEqual([{ uri: "https://example.com/usdc", note: "Referenced by claim feed" }]);
+    expect(observation.evidence).toEqual([{ uri: "https://example.com/usdc", note: `http ok sha256:${"a".repeat(64)}` }]);
     expect(observation.signature.length).toBeGreaterThan(10);
   });
 

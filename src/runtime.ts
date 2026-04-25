@@ -3,6 +3,7 @@ import { ClaimFeedLive } from "./services/claim-feed.js";
 import { ConfigLive } from "./services/config.js";
 import { CouncilLive } from "./services/council.js";
 import { DeepSeekLive } from "./services/deepseek.js";
+import { EvidenceLive } from "./services/evidence.js";
 import { OpenClawLive } from "./services/openclaw.js";
 import { SignerLive } from "./services/signer.js";
 import { ValidatorLive } from "./services/validator.js";
@@ -14,10 +15,11 @@ const SignerProvided = SignerLive.pipe(Layer.provide(ConfigLive));
 const OpenClawProvided = OpenClawLive.pipe(
   Layer.provide(
     Layer.mergeAll(
-      ConfigLive,
-      ValidatorLive,
-      DeepSeekProvided,
-      SignerProvided
+            ConfigLive,
+            ValidatorLive,
+            DeepSeekProvided,
+            EvidenceLive,
+            SignerProvided
     )
   )
 );

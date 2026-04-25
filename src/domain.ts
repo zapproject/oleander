@@ -39,6 +39,21 @@ export interface EvidenceRef {
   readonly note: string;
 }
 
+export type EvidenceAdapterKind = "http" | "price-feed" | "hash-document";
+
+export interface EvidenceRecord {
+  readonly uri: string;
+  readonly adapter: EvidenceAdapterKind;
+  readonly ok: boolean;
+  readonly hash: string;
+  readonly contentType: string | undefined;
+  readonly status: number | undefined;
+  readonly bytes: number;
+  readonly snippet: string;
+  readonly error: string | undefined;
+  readonly observedAt: string;
+}
+
 export interface EvidencePlan {
   readonly claimId: string;
   readonly roleId: WitnessRoleId;

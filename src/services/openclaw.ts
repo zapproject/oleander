@@ -2,6 +2,7 @@ import { Context, Effect, Layer } from "effect";
 import type { ClaimResponse, ClaimSpec, EvidencePlan, Observation, WitnessRole } from "../domain.js";
 import { ConfigService } from "./config.js";
 import { DeepSeek } from "./deepseek.js";
+import { Evidence } from "./evidence.js";
 import { Signer } from "./signer.js";
 import { Validator } from "./validator.js";
 
@@ -90,6 +91,7 @@ export const OpenClawLive = Layer.effect(
   Effect.gen(function* () {
     const config = yield* ConfigService;
     const deepseek = yield* DeepSeek;
+    const evidence = yield* Evidence;
     const signer = yield* Signer;
     const validator = yield* Validator;
 
@@ -112,7 +114,7 @@ export const OpenClawLive = Layer.effect(
       observe: (role, claim) =>
         Effect.gen(function* () {
           yield* validator.validateClaim(claim);
-          yield* Effect.sync(() => undefined);
+          const evidenceRecords = yield* evidence.collect(claim);
 
           const content = yield* deepseek.complete([
             {
@@ -131,7 +133,7 @@ export const OpenClawLive = Layer.effect(
             },
             {
               role: "user",
-              content: JSON.stringify(claim, null, 2)
+              content: JSON.stringify({ claim, evidence: evidenceRecords }, null, 2)
             }
           ]);
 
@@ -144,7 +146,10 @@ export const OpenClawLive = Layer.effect(
             nodeId: config.nodeId,
             response,
             confidence: confidenceFor(response),
-            evidence: claim.sources.map((uri) => ({ uri, note: "Referenced by claim feed" })),
+            evidence: evidenceRecords.map((record) => ({
+              uri: record.uri,
+              note: `${record.adapter} ${record.ok ? "ok" : "failed"} sha256:${record.hash}`
+            })),
             rationale: content,
             observedAt: new Date().toISOString()
           } satisfies Omit<Observation, "signature">;
