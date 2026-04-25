@@ -32,4 +32,4 @@ const CouncilProvided = CouncilLive.pipe(
   )
 );
 
-export const AppLayer = Layer.mergeAll(ClaimFeedProvided, CouncilProvided);
+export const AppLayer = Layer.mergeAll(ClaimFeedProvided, DeepSeekProvided, CouncilProvided);

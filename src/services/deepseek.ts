@@ -8,6 +8,7 @@ export interface ChatMessage {
 
 export interface DeepSeekService {
   readonly complete: (messages: ReadonlyArray<ChatMessage>) => Effect.Effect<string, Error>;
+  readonly smoke: Effect.Effect<string, Error>;
 }
 
 export class DeepSeek extends Context.Tag("DeepSeek")<
@@ -26,6 +27,26 @@ interface DeepSeekResponse {
   };
 }
 
+const redactProviderError = (message: string): string =>
+  message.replace(/sk-[A-Za-z0-9_\-\.]+/g, "sk-REDACTED");
+
+const mockCompletion = (messages: ReadonlyArray<ChatMessage>): string => {
+  let userContent = "";
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user") {
+      userContent = message.content;
+      break;
+    }
+  }
+  return [
+    "insufficient evidence",
+    "",
+    "Mock DeepSeek response. The witness service is reachable, but live model calls are disabled.",
+    userContent ? `Input bytes: ${userContent.length}.` : "No user input was provided."
+  ].join("\n");
+};
+
 export const DeepSeekLive = Layer.effect(
   DeepSeek,
   Effect.gen(function* () {
@@ -35,6 +56,10 @@ export const DeepSeekLive = Layer.effect(
       complete: (messages) =>
         Effect.tryPromise({
           try: async () => {
+            if (config.deepseekMock) {
+              return mockCompletion(messages);
+            }
+
             if (!config.deepseekApiKey) {
               throw new Error("Missing DeepSeek API key. Set DEEPSEEK_API_KEY or DEEPSEEK_KEY_FILE.");
             }
@@ -54,7 +79,9 @@ export const DeepSeekLive = Layer.effect(
 
             const json = (await response.json()) as DeepSeekResponse;
             if (!response.ok) {
-              throw new Error(json.error?.message ?? `DeepSeek request failed: ${response.status}`);
+              throw new Error(
+                redactProviderError(json.error?.message ?? `DeepSeek request failed: ${response.status}`)
+              );
             }
 
             const content = json.choices?.[0]?.message?.content;
@@ -64,7 +91,24 @@ export const DeepSeekLive = Layer.effect(
             return content;
           },
           catch: (error) => error instanceof Error ? error : new Error(String(error))
-        })
+        }),
+
+      smoke: Effect.gen(function* () {
+        return yield* Effect.tryPromise({
+          try: async () => {
+            if (config.deepseekMock) {
+              return "DeepSeek mock mode is enabled.";
+            }
+
+            if (!config.deepseekApiKey) {
+              throw new Error("Missing DeepSeek API key. Set DEEPSEEK_API_KEY or DEEPSEEK_KEY_FILE.");
+            }
+
+            return "DeepSeek API key is configured.";
+          },
+          catch: (error) => error instanceof Error ? error : new Error(String(error))
+        });
+      })
     };
   })
 );

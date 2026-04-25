@@ -2,14 +2,16 @@
 
 Oleander is the first CLI harness for the ZAP Witness Council.
 
-The harness runs agentic witnesses over typed claim feeds using TypeScript and Effect services. DeepSeek is used through one shared API-key service; the key is read from `DEEPSEEK_API_KEY` or a local key file such as `../deepseek.md`.
+The harness runs agentic witnesses over typed claim feeds using TypeScript and Effect services. DeepSeek is used through one shared API-key service; the key is read from `DEEPSEEK_API_KEY` or a local key file such as `../deepseek.md`. Set `DEEPSEEK_MOCK=1` to exercise the CLI without live model calls.
 
 ## Commands
 
 ```bash
 bun install
 bun run build
+bun test
 bun run dev -- claims list
+bun run dev -- deepseek smoke
 bun run dev -- roles list
 bun run dev -- council --once
 bun run dev -- council --role law --once

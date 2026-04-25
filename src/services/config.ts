@@ -9,6 +9,7 @@ export interface AppConfig {
   readonly deepseekApiKey: string | undefined;
   readonly deepseekBaseUrl: string;
   readonly deepseekModel: string;
+  readonly deepseekMock: boolean;
 }
 
 export class ConfigService extends Context.Tag("ConfigService")<
@@ -16,7 +17,7 @@ export class ConfigService extends Context.Tag("ConfigService")<
   AppConfig
 >() {}
 
-const extractApiKey = (raw: string): string | undefined => {
+export const extractDeepSeekApiKey = (raw: string): string | undefined => {
   const envLike = raw.match(/DEEPSEEK_API_KEY\s*=\s*["']?([A-Za-z0-9_\-\.]+)["']?/);
   if (envLike?.[1]) return envLike[1];
 
@@ -31,8 +32,11 @@ const readKeyFile = (path: string | undefined): string | undefined => {
   if (!path) return undefined;
   const absolute = resolve(process.cwd(), path);
   if (!existsSync(absolute)) return undefined;
-  return extractApiKey(readFileSync(absolute, "utf8"));
+  return extractDeepSeekApiKey(readFileSync(absolute, "utf8"));
 };
+
+const isEnabled = (value: string | undefined): boolean =>
+  value === "1" || value === "true" || value === "yes";
 
 export const ConfigLive = Layer.effect(
   ConfigService,
@@ -45,7 +49,8 @@ export const ConfigLive = Layer.effect(
       witnessDomain: process.env.ZAP_WITNESS_DOMAIN,
       deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? readKeyFile(keyFile),
       deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
-      deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-chat"
+      deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+      deepseekMock: isEnabled(process.env.DEEPSEEK_MOCK)
     };
   })
 );

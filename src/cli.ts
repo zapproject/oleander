@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { WitnessRoles, type WitnessRoleId } from "./domain.js";
 import { ClaimFeed } from "./services/claim-feed.js";
 import { Council } from "./services/council.js";
+import { DeepSeek } from "./services/deepseek.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -18,6 +19,7 @@ const help = Effect.sync(() => {
 
 Commands:
   zap claims list
+  zap deepseek smoke
   zap roles list
   zap council --once
   zap council --role <role-id> --once
@@ -41,7 +43,7 @@ const readFlag = (name: string): string | undefined => {
 const isWitnessRoleId = (value: string): value is WitnessRoleId =>
   WitnessRoles.some((role) => role.id === value);
 
-const program: Effect.Effect<void, Error, ClaimFeed | Council> = (() => {
+const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek> = (() => {
   if (command === "claims" && subcommand === "list") {
     return Effect.gen(function* () {
       const feed = yield* ClaimFeed;
@@ -51,6 +53,13 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council> = (() => {
 
   if (command === "roles" && subcommand === "list") {
     return Effect.sync(() => printJson(WitnessRoles));
+  }
+
+  if (command === "deepseek" && subcommand === "smoke") {
+    return Effect.gen(function* () {
+      const deepseek = yield* DeepSeek;
+      printJson({ ok: true, message: yield* deepseek.smoke });
+    });
   }
 
   if (command === "council" && args.includes("--once")) {
