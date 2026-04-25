@@ -5,6 +5,17 @@ export type ClaimKind =
   | "categorical"
   | "hash_attestation";
 
+export const ClaimKinds: ReadonlyArray<ClaimKind> = [
+  "yes_no",
+  "uint32_multi_value",
+  "scalar_int",
+  "categorical",
+  "hash_attestation"
+];
+
+export const isClaimKind = (value: unknown): value is ClaimKind =>
+  typeof value === "string" && ClaimKinds.includes(value as ClaimKind);
+
 export interface ClaimSpec {
   readonly id: string;
   readonly kind: ClaimKind;

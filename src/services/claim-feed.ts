@@ -1,7 +1,7 @@
 import { Context, Effect, Layer } from "effect";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ClaimSpec } from "../domain.js";
+import { isClaimKind, type ClaimSpec } from "../domain.js";
 import { ConfigService } from "./config.js";
 
 export interface ClaimFeedService {
@@ -13,23 +13,60 @@ export class ClaimFeed extends Context.Tag("ClaimFeed")<
   ClaimFeedService
 >() {}
 
-const parseClaimFeed = (raw: string): ReadonlyArray<ClaimSpec> => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const requireString = (claim: Record<string, unknown>, index: number, field: string): string => {
+  const value = claim[field];
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Claim feed item ${index} field '${field}' must be a non-empty string`);
+  }
+  return value;
+};
+
+const requireSources = (claim: Record<string, unknown>, index: number): ReadonlyArray<string> => {
+  const value = claim.sources;
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`Claim feed item ${index} field 'sources' must be a non-empty string array`);
+  }
+  for (const [sourceIndex, source] of value.entries()) {
+    if (typeof source !== "string" || source.trim().length === 0) {
+      throw new Error(`Claim feed item ${index} source ${sourceIndex} must be a non-empty string`);
+    }
+  }
+  return value;
+};
+
+const requireLiveness = (claim: Record<string, unknown>, index: number): number => {
+  const value = claim.livenessSeconds;
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    throw new Error(`Claim feed item ${index} field 'livenessSeconds' must be a positive integer`);
+  }
+  return value;
+};
+
+export const parseClaimFeed = (raw: string): ReadonlyArray<ClaimSpec> => {
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed)) {
     throw new Error("Claim feed must be a JSON array");
   }
-  return parsed.map((item) => {
-    const claim = item as Partial<ClaimSpec>;
-    if (!claim.id || !claim.kind || !claim.domain || !claim.statement) {
-      throw new Error("Claim is missing required fields");
+  return parsed.map((item, index) => {
+    if (!isRecord(item)) {
+      throw new Error(`Claim feed item ${index} must be an object`);
     }
+
+    const kind = item.kind;
+    if (!isClaimKind(kind)) {
+      throw new Error(`Claim feed item ${index} field 'kind' is unsupported`);
+    }
+
     return {
-      id: claim.id,
-      kind: claim.kind,
-      domain: claim.domain,
-      statement: claim.statement,
-      sources: Array.isArray(claim.sources) ? claim.sources : [],
-      livenessSeconds: Number(claim.livenessSeconds ?? 300)
+      id: requireString(item, index, "id"),
+      kind,
+      domain: requireString(item, index, "domain"),
+      statement: requireString(item, index, "statement"),
+      sources: requireSources(item, index),
+      livenessSeconds: requireLiveness(item, index)
     };
   });
 };
