@@ -4,6 +4,7 @@ import { ConfigLive } from "./services/config.js";
 import { CouncilLive } from "./services/council.js";
 import { DeepSeekLive } from "./services/deepseek.js";
 import { EvidenceLive } from "./services/evidence.js";
+import { GossipLive } from "./services/gossip.js";
 import { OpenClawLive } from "./services/openclaw.js";
 import { SchedulerLive } from "./services/scheduler.js";
 import { SignerLive } from "./services/signer.js";
@@ -38,4 +39,4 @@ const CouncilProvided = CouncilLive.pipe(
 
 const SchedulerProvided = SchedulerLive.pipe(Layer.provide(ConfigLive));
 
-export const AppLayer = Layer.mergeAll(ClaimFeedProvided, DeepSeekProvided, CouncilProvided, SchedulerProvided);
+export const AppLayer = Layer.mergeAll(ClaimFeedProvided, DeepSeekProvided, CouncilProvided, SchedulerProvided, GossipLive);
