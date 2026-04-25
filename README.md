@@ -4,6 +4,15 @@ Oleander is the first CLI harness for the ZAP Witness Council.
 
 The harness runs agentic witnesses over typed claim feeds using TypeScript and Effect services. DeepSeek is used through one shared API-key service; the key is read from `DEEPSEEK_API_KEY` or a local key file such as `../deepseek.md`. Set `DEEPSEEK_MOCK=1` to exercise the CLI without live model calls.
 
+## Start Here
+
+- [src](src/README.md): CLI entrypoint, shared domain types, and Effect runtime wiring.
+- [src/services](src/services/README.md): Witness Council services, oracle reducer, gossip set, evidence adapters, economy receipts, and tests.
+- [claims](claims/README.md): Typed demo claim feed for stablecoin work.
+- [Dockerfile](Dockerfile): Bun container image for witness clients.
+- [docker-compose.yml](docker-compose.yml): Local multi-witness harness.
+- [.env.example](.env.example): Runtime config surface.
+
 ## Commands
 
 ```bash
@@ -25,6 +34,22 @@ Docker testbed:
 ```bash
 docker compose up --build
 ```
+
+## Architecture
+
+```text
+zap CLI
+  -> claim feed
+  -> scheduled witness runtime
+  -> OpenCLAW evidence and model workflow
+  -> typed validator
+  -> signer
+  -> gossip evidence set
+  -> optimistic oracle reducer
+  -> work and reward receipts
+```
+
+The important rule: gossip converges signed evidence, OpenCLAW gathers and critiques, the validator enforces typed boundaries, and the oracle reducer derives proposal/dispute/settlement state.
 
 ## Council Roles
 
@@ -50,3 +75,20 @@ The current signer is a deterministic development signer scoped by `ZAP_NODE_ID`
 ## Witness Economy Boundary
 
 Stablecoins pay for completed oracle work. ZAP accounts for utility, staking, reputation, amplification, and council-governed incentives. Rewards must derive from verifiable work receipts such as signed observations, valid disputes, availability proofs, or quality/amplification receipts. The Council governs incentive policy; typed claims and the oracle reducer govern truth.
+
+## Current Capstone Slice
+
+The current repo proves the local client harness:
+
+- Bun + Effect TS CLI
+- DeepSeek Pro council activity check
+- typed claim feed and validator
+- OpenCLAW observation runtime
+- normalized evidence adapters
+- deterministic dev signing
+- append-only gossip/CRDT-style message set
+- optimistic oracle reducer
+- scheduled witness loop
+- adversarial validation suite
+
+Run `bun test` for the fastest confidence check.
