@@ -46,3 +46,7 @@ DeepSeek can help each witness analyze claims and produce structured observation
 ## Signing Boundary
 
 The current signer is a deterministic development signer scoped by `ZAP_NODE_ID`. It is suitable for local harness work and reproducible tests. Production signing should replace `SignerLive` behind the same Effect service boundary with wallet, KMS, or node-key signing; observation payload shape should remain canonical so signatures stay auditable.
+
+## Witness Economy Boundary
+
+Stablecoins pay for completed oracle work. ZAP accounts for utility, staking, reputation, amplification, and council-governed incentives. Rewards must derive from verifiable work receipts such as signed observations, valid disputes, availability proofs, or quality/amplification receipts. The Council governs incentive policy; typed claims and the oracle reducer govern truth.
