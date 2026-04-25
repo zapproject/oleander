@@ -27,9 +27,11 @@ export const CouncilLive = Layer.effect(
 
     const claimsForPolicy = feed.list.pipe(
       Effect.map((claims) =>
-        config.witnessDomain
-          ? claims.filter((claim) => claim.domain === config.witnessDomain)
-          : claims
+        claims.filter((claim) => {
+          const domainMatches = config.witnessDomain ? claim.domain === config.witnessDomain : true;
+          const kindMatches = config.witnessKinds ? config.witnessKinds.includes(claim.kind) : true;
+          return domainMatches && kindMatches;
+        })
       )
     );
 

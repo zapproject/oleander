@@ -4,6 +4,7 @@ import { WitnessRoles, type WitnessRoleId } from "./domain.js";
 import { ClaimFeed } from "./services/claim-feed.js";
 import { Council } from "./services/council.js";
 import { DeepSeek } from "./services/deepseek.js";
+import { Scheduler } from "./services/scheduler.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -25,6 +26,7 @@ Commands:
   zap council --once
   zap council --role <role-id> --once
   zap run --once
+  zap run --daemon [--ticks n]
 
 Environment:
   DEEPSEEK_API_KEY       DeepSeek API key
@@ -44,7 +46,14 @@ const readFlag = (name: string): string | undefined => {
 const isWitnessRoleId = (value: string): value is WitnessRoleId =>
   WitnessRoles.some((role) => role.id === value);
 
-const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek> = (() => {
+const readPositiveIntFlag = (name: string): number | undefined => {
+  const value = readFlag(name);
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Scheduler> = (() => {
   if (command === "claims" && subcommand === "list") {
     return Effect.gen(function* () {
       const feed = yield* ClaimFeed;
@@ -89,6 +98,28 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek> = (() 
     return Effect.gen(function* () {
       const council = yield* Council;
       printJson(yield* council.runWitness);
+    });
+  }
+
+  if (command === "run" && args.includes("--daemon")) {
+    return Effect.gen(function* () {
+      const council = yield* Council;
+      const scheduler = yield* Scheduler;
+      const schedule = yield* scheduler.schedule;
+      const ticks = readPositiveIntFlag("--ticks");
+      let count = 0;
+      while (ticks === undefined || count < ticks) {
+        printJson({
+          type: "witness_tick",
+          tick: count + 1,
+          schedule,
+          observations: yield* council.runWitness
+        });
+        count += 1;
+        if (ticks === undefined || count < ticks) {
+          yield* scheduler.sleep(schedule.claimScanIntervalMs);
+        }
+      }
     });
   }
 
