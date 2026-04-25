@@ -50,4 +50,20 @@ describe("Signer", () => {
     const second = await signWith("node-b", { claimId: "claim:test:1" });
     expect(first).not.toBe(second);
   });
+
+  test("verifies matching dev signature", async () => {
+    const payload = { claimId: "claim:test:1" };
+    const signature = await signWith("node-a", payload);
+    const verified = await Effect.runPromise(
+      Effect.provide(
+        Effect.gen(function* () {
+          const signer = yield* Signer;
+          return yield* signer.verify(payload, signature);
+        }),
+        SignerLive.pipe(Layer.provide(Layer.succeed(ConfigService, config("node-a"))))
+      )
+    );
+
+    expect(verified).toBe(true);
+  });
 });

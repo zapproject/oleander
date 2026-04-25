@@ -4,6 +4,7 @@ import { ConfigService } from "./config.js";
 
 export interface SignerService {
   readonly sign: (payload: unknown) => Effect.Effect<string>;
+  readonly verify: (payload: unknown, signature: string) => Effect.Effect<boolean>;
 }
 
 export class Signer extends Context.Tag("Signer")<
@@ -26,7 +27,9 @@ export const SignerLive = Layer.effect(
 
     return {
       sign: (payload) =>
-        Effect.sync(() => createHmac("sha256", devSecret).update(stableJson(payload)).digest("hex"))
+        Effect.sync(() => createHmac("sha256", devSecret).update(stableJson(payload)).digest("hex")),
+      verify: (payload, signature) =>
+        Effect.sync(() => createHmac("sha256", devSecret).update(stableJson(payload)).digest("hex") === signature)
     };
   })
 );
