@@ -11,7 +11,7 @@ export class Signer extends Context.Tag("Signer")<
   SignerService
 >() {}
 
-const stableJson = (value: unknown): string => {
+export const stableJson = (value: unknown): string => {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   const object = value as Record<string, unknown>;
