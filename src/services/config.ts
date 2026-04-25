@@ -49,7 +49,7 @@ export const ConfigLive = Layer.effect(
       witnessDomain: process.env.ZAP_WITNESS_DOMAIN,
       deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? readKeyFile(keyFile),
       deepseekBaseUrl: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
-      deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+      deepseekModel: process.env.DEEPSEEK_MODEL ?? "deepseek-v4-pro",
       deepseekMock: isEnabled(process.env.DEEPSEEK_MOCK)
     };
   })

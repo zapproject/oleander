@@ -13,6 +13,7 @@ bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
 bun run dev -- roles list
+bun run dev -- council hello
 bun run dev -- council --once
 bun run dev -- council --role law --once
 bun run dev -- run --once

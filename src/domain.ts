@@ -46,6 +46,15 @@ export interface WitnessRole {
   readonly responsibility: string;
 }
 
+export interface CouncilHelloTurn {
+  readonly witnessRole: WitnessRoleId;
+  readonly title: string;
+  readonly model: string;
+  readonly prompt: string;
+  readonly output: string;
+  readonly observedAt: string;
+}
+
 export type WitnessRoleId =
   | "high"
   | "law"

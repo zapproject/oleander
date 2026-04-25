@@ -21,6 +21,7 @@ Commands:
   zap claims list
   zap deepseek smoke
   zap roles list
+  zap council hello
   zap council --once
   zap council --role <role-id> --once
   zap run --once
@@ -59,6 +60,13 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek> = (() 
     return Effect.gen(function* () {
       const deepseek = yield* DeepSeek;
       printJson({ ok: true, message: yield* deepseek.smoke });
+    });
+  }
+
+  if (command === "council" && subcommand === "hello") {
+    return Effect.gen(function* () {
+      const council = yield* Council;
+      printJson(yield* council.hello);
     });
   }
 

@@ -27,6 +27,7 @@ const CouncilProvided = CouncilLive.pipe(
     Layer.mergeAll(
       ConfigLive,
       ClaimFeedProvided,
+      DeepSeekProvided,
       OpenClawProvided
     )
   )
