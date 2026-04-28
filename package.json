@@ -8,6 +8,9 @@
   },
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target bun",
+    "browser": "vite apps/browser-harness --host 0.0.0.0",
+    "browser:build": "vite build apps/browser-harness",
+    "browser:preview": "vite preview apps/browser-harness --host 0.0.0.0",
     "dev": "bun run src/cli.ts",
     "tui": "bun run src/cli.ts tui",
     "start": "bun dist/cli.js",
@@ -15,11 +18,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "d3": "^7.9.0",
     "effect": "^3.13.12"
   },
   "devDependencies": {
     "@types/bun": "^1.3.1",
-    "typescript": "^5.8.3"
+    "@types/d3": "^7.4.3",
+    "typescript": "^5.8.3",
+    "vite": "^8.0.10"
   },
   "engines": {
     "bun": ">=1.3.1"

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZAP Oracle Network Harness</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main id="app">
+      <section class="topbar" aria-label="Run controls">
+        <div class="brand">
+          <span class="brand-mark">ZAP</span>
+          <div>
+            <h1>Oracle Network Harness</h1>
+            <p>50 sponsored claims moving through x402, oracle workers, receipts, and gossip.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="run-button" type="button">Run</button>
+          <button id="pause-button" type="button">Pause</button>
+          <button id="reset-button" type="button">Reset</button>
+          <button id="verbose-button" type="button" aria-pressed="false">Verbose</button>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Network metrics">
+        <div class="metric">
+          <span>Total Claims</span>
+          <strong id="metric-claims">50</strong>
+        </div>
+        <div class="metric">
+          <span>Observed</span>
+          <strong id="metric-observed">0</strong>
+        </div>
+        <div class="metric">
+          <span>USDC Atomic</span>
+          <strong id="metric-usdc">0</strong>
+        </div>
+        <div class="metric">
+          <span>ZAP Atomic</span>
+          <strong id="metric-zap">0</strong>
+        </div>
+        <div class="metric">
+          <span>Active Regime</span>
+          <strong id="metric-regime">Full</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel left-panel" aria-label="Regimes and claims">
+          <div class="panel-header">
+            <h2>Regimes</h2>
+          </div>
+          <div id="regime-list" class="regime-list"></div>
+
+          <div class="panel-header compact">
+            <h2>Claims</h2>
+            <span id="claim-count-label">0 / 50</span>
+          </div>
+          <div class="claim-bars">
+            <div>
+              <span>Stablecoin Peg</span>
+              <div class="bar"><i id="bar-peg"></i></div>
+            </div>
+            <div>
+              <span>Attestation</span>
+              <div class="bar"><i id="bar-attestation"></i></div>
+            </div>
+            <div>
+              <span>Availability</span>
+              <div class="bar"><i id="bar-availability"></i></div>
+            </div>
+          </div>
+          <div id="claim-list" class="claim-list"></div>
+        </aside>
+
+        <section class="graph-shell" aria-label="Oracle network graph">
+          <svg id="network-graph" role="img" aria-label="D3 oracle network graph"></svg>
+          <div class="legend" aria-label="Legend">
+            <span><i class="dot sponsor"></i>Sponsor</span>
+            <span><i class="dot x402"></i>x402</span>
+            <span><i class="dot claim"></i>Claim</span>
+            <span><i class="dot oracle"></i>Oracle</span>
+            <span><i class="dot receipt"></i>Receipt</span>
+          </div>
+        </section>
+
+        <aside class="panel right-panel" aria-label="Node details and receipts">
+          <div class="panel-header">
+            <h2>Selected Node</h2>
+          </div>
+          <div id="selected-node" class="selected-node"></div>
+
+          <div class="panel-header compact">
+            <h2>Oracle Receipts</h2>
+          </div>
+          <div id="receipt-list" class="receipt-list"></div>
+
+          <div class="panel-header compact">
+            <h2>Event Timeline</h2>
+          </div>
+          <div id="event-list" class="event-list"></div>
+        </aside>
+      </section>
+
+      <section id="verbose-panel" class="verbose-panel" aria-label="Verbose output" hidden>
+        <div class="panel-header">
+          <h2>Verbose Output</h2>
+          <span>Recent generated receipt events</span>
+        </div>
+        <pre id="verbose-output"></pre>
+      </section>
+    </main>
+  </body>
+</html>

@@ -12,6 +12,7 @@ Cargo.lock
 # Node / TypeScript
 node_modules/
 dist/
+apps/browser-harness/dist/
 npm-debug.log*
 
 # Local ZAP runtime state and secrets

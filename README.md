@@ -8,6 +8,7 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 
 - [src](src/README.md): CLI entrypoint, shared domain types, and Effect runtime wiring.
 - [src/services](src/services/README.md): Witness Council services, oracle reducer, gossip set, evidence adapters, economy receipts, and tests.
+- [apps/browser-harness](apps/browser-harness/README.md): D3 browser cockpit for the 50-claim oracle network scenario.
 - [claims](claims/README.md): Typed demo claim feed for stablecoin work.
 - [docs/x402-witness-economy.md](docs/x402-witness-economy.md): x402 payment/staking plan and mock scenario.
 - [Dockerfile](Dockerfile): Bun container image for witness clients.
@@ -21,6 +22,8 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 ```bash
 bun install
 bun run build
+bun run browser
+bun run browser:build
 bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
