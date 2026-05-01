@@ -9,6 +9,7 @@ import { x402MockScenario } from "./services/x402-scenario.js";
 import { serveX402FacilitatorMock, serveX402ResourceMock } from "./services/x402-mock-server.js";
 import { x402WorkReportFromObservations } from "./services/x402-work.js";
 import { runTuiHarness } from "./services/tui-harness.js";
+import { serveHarnessServer } from "./services/harness-server.js";
 import { AppLayer } from "./runtime.js";
 
 const args = process.argv.slice(2);
@@ -25,6 +26,7 @@ const help = Effect.sync(() => {
 Commands:
   zap claims list
   zap deepseek smoke
+  zap harness serve
   zap roles list
   zap tui [--run]
   zap x402 scenario
@@ -65,6 +67,16 @@ const readPositiveIntFlag = (name: string): number | undefined => {
 const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Scheduler> = (() => {
   if (command === "tui") {
     return Effect.promise(() => runTuiHarness({ autoRun: args.includes("--run"), verbose: args.includes("--verbose") }));
+  }
+
+  if (command === "harness" && subcommand === "serve") {
+    return Effect.sync(() =>
+      serveHarnessServer({
+        port: Number(process.env.ZAP_HARNESS_PORT ?? 5174),
+        claimFeedPath: process.env.ZAP_SPONSORED_CLAIM_FEED ?? "claims/x402-fifty-claims.json",
+        eventDelayMs: Number(process.env.ZAP_HARNESS_EVENT_DELAY_MS ?? 75)
+      })
+    ).pipe(Effect.zipRight(Effect.never));
   }
 
   if (command === "claims" && subcommand === "list") {

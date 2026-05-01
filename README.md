@@ -22,11 +22,13 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 ```bash
 bun install
 bun run build
+bun run harness
 bun run browser
 bun run browser:build
 bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
+bun run dev -- harness serve
 bun run dev -- roles list
 bun run dev -- tui
 bun run dev -- x402 scenario
@@ -59,6 +61,14 @@ bun run tui
 ```
 
 Press `1`-`6` to choose a regime, `r` to run the sponsor/oracle incentive scenario, `v` to toggle verbose raw output, `c` to clean up the Docker stack, and `q` to exit. The TUI defaults to the 50-claim feed and parses oracle output into claim counts, active claim IDs, oracle receipt totals, and USDC/ZAP incentive totals instead of showing raw JSON as the primary view.
+
+Browser harness:
+
+```bash
+bun run harness
+```
+
+Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, USDC bounty, ZAP reward, oracle settlement, and run settlement. Use `ZAP_HARNESS_PORT` or `ZAP_HARNESS_EVENT_DELAY_MS` to change the local port or stream speed.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server

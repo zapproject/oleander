@@ -12,6 +12,7 @@
     "browser:build": "vite build apps/browser-harness",
     "browser:preview": "vite preview apps/browser-harness --host 0.0.0.0",
     "dev": "bun run src/cli.ts",
+    "harness": "bun run browser:build && bun run src/cli.ts harness serve",
     "tui": "bun run src/cli.ts tui",
     "start": "bun dist/cli.js",
     "test": "bun test",

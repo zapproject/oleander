@@ -54,6 +54,43 @@ interface Regime {
   readonly predicate: (claim: ClaimSpec) => boolean;
 }
 
+type LiveHarnessEvent =
+  | { readonly type: "run_started"; readonly runId: string; readonly regime: RegimeId; readonly totalClaims: number; readonly emittedAt: string }
+  | { readonly type: "sponsor_claims_loaded"; readonly runId: string; readonly claims: readonly ClaimSpec[]; readonly emittedAt: string }
+  | { readonly type: "oracle_started"; readonly runId: string; readonly nodeId: string; readonly claimCount: number; readonly emittedAt: string }
+  | {
+      readonly type: "observation_signed";
+      readonly runId: string;
+      readonly claimId: string;
+      readonly nodeId: string;
+      readonly response: { readonly type: "no_answer_possible"; readonly reason: string };
+      readonly signature: string;
+      readonly emittedAt: string;
+    }
+  | { readonly type: "work_receipt_created"; readonly runId: string; readonly claimId: string; readonly nodeId: string; readonly workReceiptId: string; readonly emittedAt: string }
+  | {
+      readonly type: "bounty_created";
+      readonly runId: string;
+      readonly claimId: string;
+      readonly nodeId: string;
+      readonly stablecoin: "USDC";
+      readonly amountAtomic: string;
+      readonly payoutAddress: string;
+      readonly emittedAt: string;
+    }
+  | {
+      readonly type: "zap_reward_created";
+      readonly runId: string;
+      readonly claimId: string;
+      readonly nodeId: string;
+      readonly workReceiptId: string;
+      readonly zapAmountAtomic: string;
+      readonly reason: "observation";
+      readonly emittedAt: string;
+    }
+  | { readonly type: "oracle_finished"; readonly runId: string; readonly nodeId: string; readonly observations: number; readonly stablecoinAtomic: string; readonly zapAtomic: string; readonly emittedAt: string }
+  | { readonly type: "run_finished"; readonly runId: string; readonly totalObservations: number; readonly stablecoinAtomic: string; readonly zapAtomic: string; readonly emittedAt: string };
+
 const claims = (claimsJson as ClaimSpec[]).map((claim) => ({ ...claim }));
 const bountyAtomic = 1_000_000n;
 const zapAtomic = 1_000_000_000_000_000_000n;
@@ -85,6 +122,8 @@ let activeIndex = 0;
 let activeClaims = claims.filter(activeRegime.predicate);
 let events: EventItem[] = [];
 let verboseLines: string[] = [];
+let eventSource: EventSource | undefined;
+let liveStreamStarted = false;
 
 const oracleStats: Record<string, OracleStats> = {
   "witness-availability": { nodeId: "witness-availability", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
@@ -284,6 +323,9 @@ window.addEventListener("resize", resizeGraph);
 const resetRun = () => {
   running = false;
   window.clearInterval(timer);
+  eventSource?.close();
+  eventSource = undefined;
+  liveStreamStarted = false;
   activeIndex = 0;
   activeClaims = claims.filter(activeRegime.predicate);
   events = [];
@@ -327,6 +369,37 @@ const addVerboseReceipt = (claim: ClaimSpec, oracle: string) => {
   verboseLines = verboseLines.slice(0, 8);
 };
 
+const addVerboseEvent = (event: LiveHarnessEvent) => {
+  verboseLines.unshift(JSON.stringify(event, null, 2));
+  verboseLines = verboseLines.slice(0, 10);
+};
+
+const markClaimObserved = (claimId: string, oracle: string) => {
+  const claim = claims.find((candidate) => candidate.id === claimId);
+  const node = nodeById.get(claimId);
+  const stat = oracleStats[oracle];
+  if (!claim || !node || !stat || node.status === "observed") return;
+
+  node.status = "observed";
+  const feedLink = linkById.get(`feed-${claimId}`);
+  const oracleLink = linkById.get(`${claimId}-${oracle}`);
+  if (feedLink) feedLink.active = true;
+  if (oracleLink) oracleLink.active = true;
+  stat.claimIds.push(claimId);
+  stat.observations += 1;
+  activeIndex += 1;
+};
+
+const addBounty = (oracle: string, amountAtomic: string) => {
+  const stat = oracleStats[oracle];
+  if (stat) stat.usdcAtomic += BigInt(amountAtomic);
+};
+
+const addZapReward = (oracle: string, amountAtomic: string) => {
+  const stat = oracleStats[oracle];
+  if (stat) stat.zapAtomic += BigInt(amountAtomic);
+};
+
 const stepRun = () => {
   if (activeIndex >= activeClaims.length) {
     running = false;
@@ -338,39 +411,126 @@ const stepRun = () => {
 
   const claim = activeClaims[activeIndex]!;
   const oracle = oracleForClaim(claim);
-  const node = nodeById.get(claim.id);
-  if (node) node.status = "observed";
-
-  const feedLink = linkById.get(`feed-${claim.id}`);
-  const oracleLink = linkById.get(`${claim.id}-${oracle}`);
-  if (feedLink) feedLink.active = true;
-  if (oracleLink) oracleLink.active = true;
-
-  const stat = oracleStats[oracle]!;
-  stat.claimIds.push(claim.id);
-  stat.observations += 1;
-  stat.usdcAtomic += bountyAtomic;
-  stat.zapAtomic += zapAtomic;
-
+  markClaimObserved(claim.id, oracle);
+  addBounty(oracle, bountyAtomic.toString());
+  addZapReward(oracle, zapAtomic.toString());
   addEvent(`${oracle} observed ${shortClaimId(claim.id)}`);
   addVerboseReceipt(claim, oracle);
-  activeIndex += 1;
   renderAll();
 };
 
-const run = () => {
+const liveEventLabel = (event: LiveHarnessEvent): string => {
+  if (event.type === "run_started") return `Live run started: ${event.regime}`;
+  if (event.type === "sponsor_claims_loaded") return `Sponsor loaded ${event.claims.length} claims`;
+  if (event.type === "oracle_started") return `${event.nodeId} started ${event.claimCount} claims`;
+  if (event.type === "observation_signed") return `${event.nodeId} signed ${shortClaimId(event.claimId)}`;
+  if (event.type === "work_receipt_created") return `Receipt created for ${shortClaimId(event.claimId)}`;
+  if (event.type === "bounty_created") return `${event.nodeId} earned ${event.amountAtomic} ${event.stablecoin} atomic`;
+  if (event.type === "zap_reward_created") return `${event.nodeId} earned ${event.zapAmountAtomic} ZAP atomic`;
+  if (event.type === "oracle_finished") return `${event.nodeId} settled ${event.observations} observations`;
+  return `Run settled: ${event.totalObservations} observations`;
+};
+
+const handleLiveEvent = (event: LiveHarnessEvent) => {
+  liveStreamStarted = true;
+  addVerboseEvent(event);
+  addEvent(liveEventLabel(event));
+
+  if (event.type === "run_started") {
+    activeIndex = 0;
+  }
+
+  if (event.type === "sponsor_claims_loaded") {
+    activeClaims = event.claims.map((claim) => claims.find((candidate) => candidate.id === claim.id) ?? claim);
+  }
+
+  if (event.type === "observation_signed") {
+    markClaimObserved(event.claimId, event.nodeId);
+    selectedNodeId = event.claimId;
+  }
+
+  if (event.type === "bounty_created") {
+    addBounty(event.nodeId, event.amountAtomic);
+  }
+
+  if (event.type === "zap_reward_created") {
+    addZapReward(event.nodeId, event.zapAmountAtomic);
+  }
+
+  if (event.type === "run_finished") {
+    running = false;
+    eventSource?.close();
+    eventSource = undefined;
+  }
+
+  renderAll();
+};
+
+const startSimulatedRun = () => {
   if (running) return;
   if (activeIndex >= activeClaims.length) resetRun();
   runIndex += 1;
   running = true;
-  addEvent(`Run ${runIndex} started: ${activeRegime.label}`);
+  addEvent(`Sim run ${runIndex} started: ${activeRegime.label}`);
   timer = window.setInterval(stepRun, 180);
   stepRun();
+};
+
+const startLiveRun = () => {
+  if (running) return;
+  resetRun();
+  runIndex += 1;
+  running = true;
+  liveStreamStarted = false;
+  addEvent(`Opening live SSE run ${runIndex}: ${activeRegime.label}`);
+
+  const source = new EventSource(`/events?regime=${encodeURIComponent(activeRegime.id)}`);
+  eventSource = source;
+  const eventTypes: LiveHarnessEvent["type"][] = [
+    "run_started",
+    "sponsor_claims_loaded",
+    "oracle_started",
+    "observation_signed",
+    "work_receipt_created",
+    "bounty_created",
+    "zap_reward_created",
+    "oracle_finished",
+    "run_finished"
+  ];
+
+  for (const type of eventTypes) {
+    source.addEventListener(type, (message) => {
+      handleLiveEvent(JSON.parse((message as MessageEvent).data) as LiveHarnessEvent);
+    });
+  }
+
+  source.onerror = () => {
+    source.close();
+    eventSource = undefined;
+    if (!liveStreamStarted) {
+      running = false;
+      addEvent("Live stream unavailable; using browser simulation");
+      startSimulatedRun();
+      return;
+    }
+    running = false;
+    addEvent("Live stream closed");
+    renderAll();
+  };
+
+  renderAll();
+};
+
+const run = () => {
+  if (eventSource) return;
+  startLiveRun();
 };
 
 const pause = () => {
   running = false;
   window.clearInterval(timer);
+  eventSource?.close();
+  eventSource = undefined;
   addEvent("Run paused");
   renderAll();
 };
