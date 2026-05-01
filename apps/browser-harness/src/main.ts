@@ -54,6 +54,10 @@ interface Regime {
   readonly predicate: (claim: ClaimSpec) => boolean;
 }
 
+interface HarnessConfig {
+  readonly autoRunIntervalMs: number;
+}
+
 type LiveHarnessEvent =
   | { readonly type: "run_started"; readonly runId: string; readonly regime: RegimeId; readonly totalClaims: number; readonly emittedAt: string }
   | { readonly type: "sponsor_claims_loaded"; readonly runId: string; readonly claims: readonly ClaimSpec[]; readonly emittedAt: string }
@@ -124,6 +128,9 @@ let events: EventItem[] = [];
 let verboseLines: string[] = [];
 let eventSource: EventSource | undefined;
 let liveStreamStarted = false;
+let autoRunIntervalMs = 180_000;
+let autoRunTimer: number | undefined;
+let nextRunAt = 0;
 
 const oracleStats: Record<string, OracleStats> = {
   "witness-availability": { nodeId: "witness-availability", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
@@ -343,6 +350,24 @@ const resetRun = () => {
   renderAll();
 };
 
+const clearAutoRunTimer = () => {
+  window.clearTimeout(autoRunTimer);
+  autoRunTimer = undefined;
+};
+
+const scheduleNextRun = (delayMs = autoRunIntervalMs) => {
+  clearAutoRunTimer();
+  nextRunAt = Date.now() + delayMs;
+  autoRunTimer = window.setTimeout(() => {
+    if (running) {
+      scheduleNextRun(10_000);
+      return;
+    }
+    startLiveRun();
+  }, delayMs);
+  renderAll();
+};
+
 const addEvent = (label: string) => {
   events.unshift({ tick: events.length + 1, label });
   events = events.slice(0, 18);
@@ -405,6 +430,7 @@ const stepRun = () => {
     running = false;
     window.clearInterval(timer);
     addEvent("Run settled and cleanup completed");
+    scheduleNextRun();
     renderAll();
     return;
   }
@@ -461,6 +487,7 @@ const handleLiveEvent = (event: LiveHarnessEvent) => {
     running = false;
     eventSource?.close();
     eventSource = undefined;
+    scheduleNextRun();
   }
 
   renderAll();
@@ -478,6 +505,8 @@ const startSimulatedRun = () => {
 
 const startLiveRun = () => {
   if (running) return;
+  clearAutoRunTimer();
+  nextRunAt = 0;
   resetRun();
   runIndex += 1;
   running = true;
@@ -554,6 +583,16 @@ const renderMetrics = () => {
   el("metric-usdc").textContent = totalUsdc.toString();
   el("metric-zap").textContent = totalZap.toString();
   el("metric-regime").textContent = activeRegime.label;
+  if (running) {
+    el("metric-next-run").textContent = "running";
+  } else if (nextRunAt > 0) {
+    const remainingSeconds = Math.max(0, Math.ceil((nextRunAt - Date.now()) / 1000));
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+    el("metric-next-run").textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
+  } else {
+    el("metric-next-run").textContent = "--";
+  }
 };
 
 const renderRegimes = () => {
@@ -673,5 +712,22 @@ el("verbose-button").addEventListener("click", () => {
   renderAll();
 });
 
+const loadHarnessConfig = async () => {
+  try {
+    const response = await fetch("/config");
+    if (response.ok) {
+      const config = await response.json() as HarnessConfig;
+      if (Number.isFinite(config.autoRunIntervalMs) && config.autoRunIntervalMs > 0) {
+        autoRunIntervalMs = config.autoRunIntervalMs;
+      }
+    }
+  } catch {
+    // Vite dev mode has no harness config endpoint.
+  }
+  scheduleNextRun(1_000);
+};
+
 resizeGraph();
 resetRun();
+window.setInterval(renderMetrics, 1_000);
+void loadHarnessConfig();

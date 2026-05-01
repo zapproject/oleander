@@ -68,7 +68,7 @@ Browser harness:
 bun run harness
 ```
 
-Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, USDC bounty, ZAP reward, oracle settlement, and run settlement. Use `ZAP_HARNESS_PORT` or `ZAP_HARNESS_EVENT_DELAY_MS` to change the local port or stream speed.
+Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, USDC bounty, ZAP reward, oracle settlement, and run settlement. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server

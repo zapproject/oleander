@@ -7,7 +7,9 @@ bun run harness
 ```
 
 That command builds the browser app, serves it at `http://localhost:5174`, and
-streams claim work into the graph over Server-Sent Events from `/events`.
+streams claim work into the graph over Server-Sent Events from `/events`. The
+browser auto-scans every 3 minutes; set `ZAP_HARNESS_AUTO_RUN_MS` to change the
+cadence.
 
 For frontend-only iteration without the live stream:
 

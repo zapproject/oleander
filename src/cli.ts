@@ -74,7 +74,8 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
       serveHarnessServer({
         port: Number(process.env.ZAP_HARNESS_PORT ?? 5174),
         claimFeedPath: process.env.ZAP_SPONSORED_CLAIM_FEED ?? "claims/x402-fifty-claims.json",
-        eventDelayMs: Number(process.env.ZAP_HARNESS_EVENT_DELAY_MS ?? 75)
+        eventDelayMs: Number(process.env.ZAP_HARNESS_EVENT_DELAY_MS ?? 75),
+        autoRunIntervalMs: Number(process.env.ZAP_HARNESS_AUTO_RUN_MS ?? 180_000)
       })
     ).pipe(Effect.zipRight(Effect.never));
   }

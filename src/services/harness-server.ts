@@ -12,6 +12,7 @@ export interface HarnessRunOptions {
   readonly appDistPath?: string;
   readonly port?: number;
   readonly eventDelayMs?: number;
+  readonly autoRunIntervalMs?: number;
 }
 
 export type HarnessEvent =
@@ -264,6 +265,7 @@ export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
   const port = options.port ?? 5174;
   const claimFeedPath = options.claimFeedPath ?? "claims/x402-fifty-claims.json";
   const eventDelayMs = options.eventDelayMs ?? 75;
+  const autoRunIntervalMs = options.autoRunIntervalMs ?? 180_000;
   const distRoot = resolve(process.cwd(), options.appDistPath ?? "apps/browser-harness/dist");
 
   const server = Bun.serve({
@@ -271,7 +273,10 @@ export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
     async fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/health") {
-        return Response.json({ ok: true, service: "zap-harness", claimFeedPath, eventDelayMs });
+        return Response.json({ ok: true, service: "zap-harness", claimFeedPath, eventDelayMs, autoRunIntervalMs });
+      }
+      if (url.pathname === "/config") {
+        return Response.json({ autoRunIntervalMs, eventDelayMs, claimFeedPath });
       }
       if (url.pathname === "/events") {
         return eventStreamResponse(request, { claimFeedPath, eventDelayMs });
