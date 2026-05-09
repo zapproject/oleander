@@ -11,6 +11,8 @@
     "browser": "vite apps/browser-harness --host 0.0.0.0",
     "browser:build": "vite build apps/browser-harness",
     "browser:preview": "vite preview apps/browser-harness --host 0.0.0.0",
+    "browser:typecheck": "tsc -p apps/browser-harness/tsconfig.json --noEmit",
+    "ci": "bun run typecheck && bun run browser:typecheck && bun test && bun run build && bun run browser:build",
     "dev": "bun run src/cli.ts",
     "harness": "bun run browser:build && bun run src/cli.ts harness serve",
     "tui": "bun run src/cli.ts tui",

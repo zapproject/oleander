@@ -11,6 +11,7 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 - [apps/browser-harness](apps/browser-harness/README.md): D3 browser cockpit for the 50-claim oracle network scenario.
 - [claims](claims/README.md): Typed demo claim feed for stablecoin work.
 - [docs/x402-witness-economy.md](docs/x402-witness-economy.md): x402 payment/staking plan and mock scenario.
+- [docs/production-boundaries.md](docs/production-boundaries.md): mock/dev adapter boundaries and production guardrails.
 - [Dockerfile](Dockerfile): Bun container image for witness clients.
 - [docker-compose.yml](docker-compose.yml): Local multi-witness harness.
 - [docker-compose.x402-mock.yml](docker-compose.x402-mock.yml): Mock x402-funded work scenario.
@@ -21,7 +22,10 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 
 ```bash
 bun install
+bun run ci
 bun run build
+bun run typecheck
+bun run browser:typecheck
 bun run harness
 bun run browser
 bun run browser:build
@@ -74,6 +78,8 @@ The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server
 returns `402 Payment Required` until a witness supplies the mock `X-PAYMENT`
 header; council clients then fetch the paid claim feed and process work.
+
+Run artifacts are written to `runs/` by default for `x402 work --once` and TUI scenario runs. Set `ZAP_RUN_ARTIFACT_DIR` to write them elsewhere.
 
 ## Architecture
 

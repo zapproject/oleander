@@ -4,6 +4,7 @@ import { ConfigService, type AppConfig } from "./config.js";
 import { Signer, SignerLive, stableJson } from "./signer.js";
 
 const config = (nodeId: string): AppConfig => ({
+  runtimeMode: "local",
   nodeId,
   claimFeedPath: "claims/demo.json",
   witnessDomain: undefined,
@@ -15,7 +16,9 @@ const config = (nodeId: string): AppConfig => ({
   deepseekApiKey: undefined,
   deepseekBaseUrl: "https://api.deepseek.com",
   deepseekModel: "deepseek-v4-pro",
-  deepseekMock: true
+  deepseekMock: true,
+  signerMode: "dev",
+  x402Mode: "mock"
 });
 
 const signWith = (nodeId: string, payload: unknown) =>
@@ -66,5 +69,21 @@ describe("Signer", () => {
     );
 
     expect(verified).toBe(true);
+  });
+
+  test("refuses to masquerade as a production signer", async () => {
+    await expect(
+      Effect.runPromise(
+        Effect.provide(
+          Effect.gen(function* () {
+            const signer = yield* Signer;
+            return yield* signer.sign({ claimId: "claim:test:1" });
+          }),
+          SignerLive.pipe(
+            Layer.provide(Layer.succeed(ConfigService, { ...config("node-a"), signerMode: "production" }))
+          )
+        )
+      )
+    ).rejects.toThrow("Production signer adapter is not implemented");
   });
 });

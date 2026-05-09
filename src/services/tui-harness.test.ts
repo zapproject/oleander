@@ -1,12 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
+  activeRegime,
+  applyStructuredOutput,
   defaultHarnessEnv,
   extractJsonValues,
   harnessRegimes,
+  resetSteps,
   statusGlyph,
   summarizeHarnessOutput,
+  type HarnessState,
   x402HarnessSteps
-} from "./tui-harness.js";
+} from "./tui-harness-core.js";
 
 describe("tui harness", () => {
   test("defines the sponsor/oracle x402 run sequence", () => {
@@ -34,6 +38,19 @@ describe("tui harness", () => {
       "attestation",
       "peg",
       "stablecoins"
+    ]);
+  });
+
+  test("builds pending steps for the active regime", () => {
+    const state = { selectedRegime: 5 };
+    expect(activeRegime(state).id).toBe("stablecoins");
+    expect(resetSteps(state).map((step) => [step.id, step.status])).toEqual([
+      ["build", "pending"],
+      ["resource", "pending"],
+      ["sponsor", "pending"],
+      ["attestation", "pending"],
+      ["peg", "pending"],
+      ["cleanup", "pending"]
     ]);
   });
 
@@ -73,5 +90,26 @@ describe("tui harness", () => {
       zapAtomic: "4000000000000000000",
       claimIds: ["claim:a"]
     });
+  });
+
+  test("applies structured output to state summaries", () => {
+    const state: HarnessState = {
+      running: false,
+      runCount: 0,
+      selectedRegime: 0,
+      showVerbose: false,
+      logs: [],
+      verboseLogs: [],
+      steps: [],
+      claims: [],
+      reports: []
+    };
+    applyStructuredOutput(
+      state,
+      { ...x402HarnessSteps("compose.yml")[2]!, status: "passed", exitCode: 0 },
+      "[{\"id\":\"claim:a\",\"kind\":\"yes_no\",\"domain\":\"stablecoins\",\"statement\":\"A claim.\"}]"
+    );
+    expect(state.claims).toHaveLength(1);
+    expect(state.logs.at(-1)).toBe("parsed 1 sponsored claims");
   });
 });

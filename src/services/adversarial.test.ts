@@ -18,6 +18,7 @@ const claim: ClaimSpec = {
 };
 
 const config: AppConfig = {
+  runtimeMode: "local",
   nodeId: "node-a",
   claimFeedPath: "claims/demo.json",
   witnessDomain: undefined,
@@ -29,7 +30,9 @@ const config: AppConfig = {
   deepseekApiKey: undefined,
   deepseekBaseUrl: "https://api.deepseek.com",
   deepseekModel: "deepseek-v4-pro",
-  deepseekMock: true
+  deepseekMock: true,
+  signerMode: "dev",
+  x402Mode: "mock"
 };
 
 const observation = (nodeId: string, value: boolean, signature = `${nodeId}-sig`): Observation => ({

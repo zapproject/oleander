@@ -24,6 +24,7 @@ const role: WitnessRole = {
 };
 
 const config: AppConfig = {
+  runtimeMode: "local",
   nodeId: "test-node",
   claimFeedPath: "claims/demo.json",
   witnessDomain: undefined,
@@ -35,7 +36,9 @@ const config: AppConfig = {
   deepseekApiKey: undefined,
   deepseekBaseUrl: "https://api.deepseek.com",
   deepseekModel: "deepseek-v4-pro",
-  deepseekMock: true
+  deepseekMock: true,
+  signerMode: "dev",
+  x402Mode: "mock"
 };
 
 const runOpenClaw = <A>(effect: Effect.Effect<A, Error, OpenClaw>, modelOutput: string) =>

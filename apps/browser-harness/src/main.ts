@@ -1,21 +1,28 @@
 import * as d3 from "d3";
 import claimsJson from "../../../claims/x402-fifty-claims.json";
+import {
+  addEventItem,
+  addVerboseLine,
+  bountyAtomic,
+  claimCategory,
+  createOracleStats,
+  createVerboseReceipt,
+  liveEventLabel,
+  liveEventTypes,
+  oracleForClaim,
+  regimes,
+  resetOracleStats,
+  shortClaimId,
+  zapAtomic,
+  type ClaimSpec,
+  type ClaimStatus,
+  type EventItem,
+  type HarnessConfig,
+  type LiveHarnessEvent,
+  type NodeType,
+  type OracleStats
+} from "./harness-model.js";
 import "./styles.css";
-
-type ClaimKind = "yes_no" | "hash_attestation";
-type ClaimDomain = "stablecoins" | "availability";
-type ClaimStatus = "pending" | "observed";
-type NodeType = "sponsor" | "x402" | "feed" | "claim" | "oracle" | "receipt" | "gossip";
-type RegimeId = "full" | "sponsor" | "availability" | "attestation" | "peg" | "stablecoins";
-
-interface ClaimSpec {
-  readonly id: string;
-  readonly kind: ClaimKind;
-  readonly domain: ClaimDomain;
-  readonly statement: string;
-  readonly sources: string[];
-  readonly livenessSeconds: number;
-}
 
 interface GraphNode extends d3.SimulationNodeDatum {
   readonly id: string;
@@ -35,86 +42,7 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   active?: boolean;
 }
 
-interface OracleStats {
-  readonly nodeId: string;
-  claimIds: string[];
-  observations: number;
-  usdcAtomic: bigint;
-  zapAtomic: bigint;
-}
-
-interface EventItem {
-  readonly tick: number;
-  readonly label: string;
-}
-
-interface Regime {
-  readonly id: RegimeId;
-  readonly label: string;
-  readonly predicate: (claim: ClaimSpec) => boolean;
-}
-
-interface HarnessConfig {
-  readonly autoRunIntervalMs: number;
-}
-
-type LiveHarnessEvent =
-  | { readonly type: "run_started"; readonly runId: string; readonly regime: RegimeId; readonly totalClaims: number; readonly emittedAt: string }
-  | { readonly type: "sponsor_claims_loaded"; readonly runId: string; readonly claims: readonly ClaimSpec[]; readonly emittedAt: string }
-  | { readonly type: "oracle_started"; readonly runId: string; readonly nodeId: string; readonly claimCount: number; readonly emittedAt: string }
-  | {
-      readonly type: "observation_signed";
-      readonly runId: string;
-      readonly claimId: string;
-      readonly nodeId: string;
-      readonly response: { readonly type: "no_answer_possible"; readonly reason: string };
-      readonly signature: string;
-      readonly emittedAt: string;
-    }
-  | { readonly type: "work_receipt_created"; readonly runId: string; readonly claimId: string; readonly nodeId: string; readonly workReceiptId: string; readonly emittedAt: string }
-  | {
-      readonly type: "bounty_created";
-      readonly runId: string;
-      readonly claimId: string;
-      readonly nodeId: string;
-      readonly stablecoin: "USDC";
-      readonly amountAtomic: string;
-      readonly payoutAddress: string;
-      readonly emittedAt: string;
-    }
-  | {
-      readonly type: "zap_reward_created";
-      readonly runId: string;
-      readonly claimId: string;
-      readonly nodeId: string;
-      readonly workReceiptId: string;
-      readonly zapAmountAtomic: string;
-      readonly reason: "observation";
-      readonly emittedAt: string;
-    }
-  | { readonly type: "oracle_finished"; readonly runId: string; readonly nodeId: string; readonly observations: number; readonly stablecoinAtomic: string; readonly zapAtomic: string; readonly emittedAt: string }
-  | { readonly type: "run_finished"; readonly runId: string; readonly totalObservations: number; readonly stablecoinAtomic: string; readonly zapAtomic: string; readonly emittedAt: string };
-
 const claims = (claimsJson as ClaimSpec[]).map((claim) => ({ ...claim }));
-const bountyAtomic = 1_000_000n;
-const zapAtomic = 1_000_000_000_000_000_000n;
-
-const regimes: Regime[] = [
-  { id: "full", label: "Full Network", predicate: () => true },
-  { id: "sponsor", label: "Sponsor Gate", predicate: () => false },
-  { id: "availability", label: "Availability Oracles", predicate: (claim) => claim.domain === "availability" },
-  {
-    id: "attestation",
-    label: "Attestation Oracles",
-    predicate: (claim) => claim.domain === "stablecoins" && claim.kind === "hash_attestation"
-  },
-  {
-    id: "peg",
-    label: "Peg Oracles",
-    predicate: (claim) => claim.domain === "stablecoins" && claim.kind === "yes_no"
-  },
-  { id: "stablecoins", label: "Stablecoin Oracles", predicate: (claim) => claim.domain === "stablecoins" }
-];
 
 let activeRegime = regimes[0]!;
 let runIndex = 0;
@@ -132,11 +60,7 @@ let autoRunIntervalMs = 180_000;
 let autoRunTimer: number | undefined;
 let nextRunAt = 0;
 
-const oracleStats: Record<string, OracleStats> = {
-  "witness-availability": { nodeId: "witness-availability", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
-  "witness-attestation": { nodeId: "witness-attestation", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
-  "witness-peg": { nodeId: "witness-peg", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n }
-};
+const oracleStats: Record<string, OracleStats> = createOracleStats();
 
 const nodeById = new Map<string, GraphNode>();
 const linkById = new Map<string, GraphLink>();
@@ -162,20 +86,6 @@ const colorFor = (node: GraphNode): string => {
   if (node.claim?.kind === "hash_attestation") return "#b98cff";
   return "#46c2ff";
 };
-
-const oracleForClaim = (claim: ClaimSpec): string => {
-  if (claim.domain === "availability") return "witness-availability";
-  if (claim.kind === "hash_attestation") return "witness-attestation";
-  return "witness-peg";
-};
-
-const claimCategory = (claim: ClaimSpec): "peg" | "attestation" | "availability" => {
-  if (claim.domain === "availability") return "availability";
-  if (claim.kind === "hash_attestation") return "attestation";
-  return "peg";
-};
-
-const shortClaimId = (id: string): string => id.replace("claim:x402:50:", "");
 
 const buildGraph = () => {
   const nodes: GraphNode[] = [
@@ -341,12 +251,7 @@ const resetRun = () => {
     if (node.type === "claim") node.status = "pending";
   }
   for (const link of links) link.active = false;
-  for (const stat of Object.values(oracleStats)) {
-    stat.claimIds = [];
-    stat.observations = 0;
-    stat.usdcAtomic = 0n;
-    stat.zapAtomic = 0n;
-  }
+  resetOracleStats(oracleStats);
   renderAll();
 };
 
@@ -369,34 +274,15 @@ const scheduleNextRun = (delayMs = autoRunIntervalMs) => {
 };
 
 const addEvent = (label: string) => {
-  events.unshift({ tick: events.length + 1, label });
-  events = events.slice(0, 18);
+  events = addEventItem(events, label);
 };
 
 const addVerboseReceipt = (claim: ClaimSpec, oracle: string) => {
-  const receipt = {
-    type: "x402_oracle_work",
-    sponsor: "sponsor:x402:mock",
-    oracle,
-    claimId: claim.id,
-    workReceipt: `work:${claim.id}:${oracle}`,
-    stablecoinBounty: {
-      stablecoin: "USDC",
-      amountAtomic: bountyAtomic.toString(),
-      payoutAddress: `mock-wallet:${oracle}`
-    },
-    zapReward: {
-      zapAmountAtomic: zapAtomic.toString(),
-      reason: "observation"
-    }
-  };
-  verboseLines.unshift(JSON.stringify(receipt, null, 2));
-  verboseLines = verboseLines.slice(0, 8);
+  verboseLines = addVerboseLine(verboseLines, createVerboseReceipt(claim, oracle), 8);
 };
 
 const addVerboseEvent = (event: LiveHarnessEvent) => {
-  verboseLines.unshift(JSON.stringify(event, null, 2));
-  verboseLines = verboseLines.slice(0, 10);
+  verboseLines = addVerboseLine(verboseLines, event, 10);
 };
 
 const markClaimObserved = (claimId: string, oracle: string) => {
@@ -443,18 +329,6 @@ const stepRun = () => {
   addEvent(`${oracle} observed ${shortClaimId(claim.id)}`);
   addVerboseReceipt(claim, oracle);
   renderAll();
-};
-
-const liveEventLabel = (event: LiveHarnessEvent): string => {
-  if (event.type === "run_started") return `Live run started: ${event.regime}`;
-  if (event.type === "sponsor_claims_loaded") return `Sponsor loaded ${event.claims.length} claims`;
-  if (event.type === "oracle_started") return `${event.nodeId} started ${event.claimCount} claims`;
-  if (event.type === "observation_signed") return `${event.nodeId} signed ${shortClaimId(event.claimId)}`;
-  if (event.type === "work_receipt_created") return `Receipt created for ${shortClaimId(event.claimId)}`;
-  if (event.type === "bounty_created") return `${event.nodeId} earned ${event.amountAtomic} ${event.stablecoin} atomic`;
-  if (event.type === "zap_reward_created") return `${event.nodeId} earned ${event.zapAmountAtomic} ZAP atomic`;
-  if (event.type === "oracle_finished") return `${event.nodeId} settled ${event.observations} observations`;
-  return `Run settled: ${event.totalObservations} observations`;
 };
 
 const handleLiveEvent = (event: LiveHarnessEvent) => {
@@ -515,19 +389,7 @@ const startLiveRun = () => {
 
   const source = new EventSource(`/events?regime=${encodeURIComponent(activeRegime.id)}`);
   eventSource = source;
-  const eventTypes: LiveHarnessEvent["type"][] = [
-    "run_started",
-    "sponsor_claims_loaded",
-    "oracle_started",
-    "observation_signed",
-    "work_receipt_created",
-    "bounty_created",
-    "zap_reward_created",
-    "oracle_finished",
-    "run_finished"
-  ];
-
-  for (const type of eventTypes) {
+  for (const type of liveEventTypes) {
     source.addEventListener(type, (message) => {
       handleLiveEvent(JSON.parse((message as MessageEvent).data) as LiveHarnessEvent);
     });

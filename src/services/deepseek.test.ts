@@ -4,6 +4,7 @@ import { DeepSeek, DeepSeekLive } from "./deepseek.js";
 import { ConfigService, type AppConfig } from "./config.js";
 
 const baseConfig: AppConfig = {
+  runtimeMode: "local",
   nodeId: "test-node",
   claimFeedPath: "claims/demo.json",
   witnessDomain: undefined,
@@ -15,7 +16,9 @@ const baseConfig: AppConfig = {
   deepseekApiKey: undefined,
   deepseekBaseUrl: "https://api.deepseek.com",
   deepseekModel: "deepseek-chat",
-  deepseekMock: false
+  deepseekMock: false,
+  signerMode: "dev",
+  x402Mode: "mock"
 };
 
 const runWithConfig = <A>(effect: Effect.Effect<A, Error, DeepSeek>, config: AppConfig) =>

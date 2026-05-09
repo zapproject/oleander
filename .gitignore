@@ -18,3 +18,4 @@ npm-debug.log*
 # Local ZAP runtime state and secrets
 .env
 .zap/
+runs/

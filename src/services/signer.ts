@@ -23,6 +23,9 @@ export const SignerLive = Layer.effect(
   Signer,
   Effect.gen(function* () {
     const config = yield* ConfigService;
+    if (config.signerMode !== "dev") {
+      throw new Error("Production signer adapter is not implemented; replace SignerLive before enabling ZAP_SIGNER_MODE=production");
+    }
     const devSecret = `zap-dev-${config.nodeId}`;
 
     return {

@@ -18,3 +18,5 @@ bun run browser
 ```
 
 The app reads the 50-claim scenario from [../../claims/x402-fifty-claims.json](../../claims/x402-fifty-claims.json), visualizes claim routing through x402 and oracle workers, and can toggle verbose generated receipt output. If `/events` is unavailable, the Run button falls back to an in-browser simulation so D3 work can continue under Vite.
+
+The reusable event/state model lives in [src/harness-model.ts](src/harness-model.ts). [src/main.ts](src/main.ts) owns the D3 graph, DOM rendering, SSE wiring, and user controls.
