@@ -52,6 +52,12 @@ Docker testbed:
 docker compose up --build
 ```
 
+Open `http://localhost:5174` for the browser harness. Run one-shot CLI workers with:
+
+```bash
+docker compose --profile workers up --build
+```
+
 x402 mock work scenario:
 
 ```bash

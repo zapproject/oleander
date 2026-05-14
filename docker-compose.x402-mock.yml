@@ -1,3 +1,5 @@
+name: oleander-x402
+
 services:
   x402-facilitator:
     build: .
@@ -49,6 +51,9 @@ services:
     build: .
     command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
+      ZAP_RUNTIME_MODE: local
+      ZAP_SIGNER_MODE: dev
+      X402_MODE: mock
       ZAP_NODE_ID: witness-peg
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: stablecoins
@@ -58,9 +63,9 @@ services:
       X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
       ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
-      DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
+      ZAP_RUN_ARTIFACT_DIR: /app/runs
     volumes:
-      - ../deepseek.md:/run/secrets/deepseek.md:ro
+      - ./runs:/app/runs
     depends_on:
       x402-resource:
         condition: service_healthy
@@ -69,6 +74,9 @@ services:
     build: .
     command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
+      ZAP_RUNTIME_MODE: local
+      ZAP_SIGNER_MODE: dev
+      X402_MODE: mock
       ZAP_NODE_ID: witness-attestation
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: stablecoins
@@ -78,9 +86,9 @@ services:
       X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
       ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
-      DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
+      ZAP_RUN_ARTIFACT_DIR: /app/runs
     volumes:
-      - ../deepseek.md:/run/secrets/deepseek.md:ro
+      - ./runs:/app/runs
     depends_on:
       x402-resource:
         condition: service_healthy
@@ -89,6 +97,9 @@ services:
     build: .
     command: ["bun", "dist/cli.js", "x402", "work", "--once"]
     environment:
+      ZAP_RUNTIME_MODE: local
+      ZAP_SIGNER_MODE: dev
+      X402_MODE: mock
       ZAP_NODE_ID: witness-availability
       ZAP_CLAIM_FEED: http://x402-resource:8404/claims
       ZAP_WITNESS_DOMAIN: availability
@@ -98,9 +109,9 @@ services:
       X402_BOUNTY_ATOMIC: ${X402_BOUNTY_ATOMIC:-1000000}
       ZAP_REWARD_ATOMIC: ${ZAP_REWARD_ATOMIC:-1000000000000000000}
       DEEPSEEK_MOCK: "1"
-      DEEPSEEK_KEY_FILE: /run/secrets/deepseek.md
+      ZAP_RUN_ARTIFACT_DIR: /app/runs
     volumes:
-      - ../deepseek.md:/run/secrets/deepseek.md:ro
+      - ./runs:/app/runs
     depends_on:
       x402-resource:
         condition: service_healthy
