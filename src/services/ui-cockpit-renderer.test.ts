@@ -20,11 +20,21 @@ const base = {
 
 const finishedEvents: HarnessEvent[] = [
   { ...base, type: "run_started", eventId: "evt:001", claimCount: 1 },
-  { ...base, type: "claim_loaded", eventId: "evt:002", claim },
+  {
+    ...base,
+    type: "balance_changed",
+    eventId: "evt:002",
+    accountId: "sponsor:local",
+    asset: "OUSD",
+    deltaAtomic: "2000000",
+    balanceAtomic: "2000000",
+    reason: "sponsor_funded"
+  },
+  { ...base, type: "claim_loaded", eventId: "evt:003", claim },
   {
     ...base,
     type: "witness_started",
-    eventId: "evt:003",
+    eventId: "evt:004",
     claimId: claim.id,
     nodeId: "witness-availability",
     witnessRole: "research"
@@ -32,7 +42,7 @@ const finishedEvents: HarnessEvent[] = [
   {
     ...base,
     type: "proposal_created",
-    eventId: "evt:004",
+    eventId: "evt:005",
     claimId: claim.id,
     response: { type: "yes_no", value: true },
     support: ["sig:fake"],
@@ -41,7 +51,7 @@ const finishedEvents: HarnessEvent[] = [
   {
     ...base,
     type: "work_receipt_created",
-    eventId: "evt:005",
+    eventId: "evt:006",
     claimId: claim.id,
     nodeId: "witness-availability",
     workReceiptId: "work:001",
@@ -52,7 +62,18 @@ const finishedEvents: HarnessEvent[] = [
   {
     ...base,
     type: "balance_changed",
-    eventId: "evt:006",
+    eventId: "evt:007",
+    accountId: "sponsor:local",
+    asset: "OUSD",
+    deltaAtomic: "-1000000",
+    balanceAtomic: "1000000",
+    reason: "settlement",
+    claimId: claim.id
+  },
+  {
+    ...base,
+    type: "balance_changed",
+    eventId: "evt:008",
     accountId: "witness-availability",
     asset: "OUSD",
     deltaAtomic: "1000000",
@@ -63,7 +84,7 @@ const finishedEvents: HarnessEvent[] = [
   {
     ...base,
     type: "run_finished",
-    eventId: "evt:007",
+    eventId: "evt:009",
     claimCount: 1,
     observationCount: 1,
     asset: "OUSD",
@@ -78,6 +99,9 @@ describe("UI cockpit renderer", () => {
     expect(output).toContain("Run: run:test [finished]");
     expect(output).toContain("Claims: 1");
     expect(output).toContain("Witnesses: 1");
+    expect(output).toContain("OUSD funded: 2000000");
+    expect(output).toContain("OUSD available: 1000000");
+    expect(output).toContain("OUSD unpaid: 0");
     expect(output).toContain("OUSD paid: 1000000");
     expect(output).toContain("claim:ousd:availability:001");
     expect(output).toContain("status=proposed");
@@ -91,6 +115,7 @@ describe("UI cockpit renderer", () => {
       finishedEvents[0]!,
       finishedEvents[1]!,
       finishedEvents[2]!,
+      finishedEvents[3]!,
       { ...base, type: "run_failed", eventId: "evt:failed", error: "model timeout" }
     ]));
     expect(output).toContain("Run: run:test [failed]");

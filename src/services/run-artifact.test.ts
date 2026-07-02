@@ -64,6 +64,17 @@ describe("run artifacts", () => {
         claimCount: 1
       },
       {
+        type: "balance_changed",
+        eventId: "evt:funded",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:00.000Z",
+        accountId: "sponsor:local",
+        asset: "OUSD",
+        deltaAtomic: "2000000",
+        balanceAtomic: "2000000",
+        reason: "sponsor_funded"
+      },
+      {
         type: "work_receipt_created",
         eventId: "evt:2",
         runId: "run:harness:test",
@@ -74,6 +85,30 @@ describe("run artifacts", () => {
         asset: "OUSD",
         amountAtomic: "1000000",
         payoutAddress: "mock-wallet:witness-a"
+      },
+      {
+        type: "balance_changed",
+        eventId: "evt:settlement",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        accountId: "sponsor:local",
+        asset: "OUSD",
+        deltaAtomic: "-1000000",
+        balanceAtomic: "1000000",
+        reason: "settlement",
+        claimId: "claim:ousd:test"
+      },
+      {
+        type: "balance_changed",
+        eventId: "evt:paid",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        accountId: "witness-a",
+        asset: "OUSD",
+        deltaAtomic: "1000000",
+        balanceAtomic: "1000000",
+        reason: "work_receipt",
+        claimId: "claim:ousd:test"
       },
       {
         type: "run_finished",
@@ -96,10 +131,15 @@ describe("run artifacts", () => {
       command: "headless run --once",
       claimFeedPath: "claims/demo.json",
       summary: {
-        eventCount: 3,
+        eventCount: 6,
         claimCount: 1,
         observationCount: 1,
         paymentAsset: "OUSD",
+        sponsorFundedAtomic: "2000000",
+        availableBudgetAtomic: "1000000",
+        committedPayoutAtomic: "1000000",
+        unpaidPayoutAtomic: "0",
+        paidPayoutAtomic: "1000000",
         payoutAtomic: "1000000",
         failed: false
       },

@@ -60,7 +60,9 @@ export interface UiCockpitState {
 const emptyBalances = (): HarnessBalanceState => ({
   asset: "OUSD",
   sponsorFundedAtomic: "0",
+  availableBudgetAtomic: "0",
   committedPayoutAtomic: "0",
+  unpaidPayoutAtomic: "0",
   paidPayoutAtomic: "0",
   accounts: {}
 });

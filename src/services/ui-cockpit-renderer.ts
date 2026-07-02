@@ -35,7 +35,9 @@ export const renderUiCockpit = (state: UiCockpitState): string => {
       `Claims: ${state.claimOrder.length}`,
       `Witnesses: ${state.witnessOrder.length}`,
       `OUSD funded: ${state.balances.sponsorFundedAtomic}`,
+      `OUSD available: ${state.balances.availableBudgetAtomic}`,
       `OUSD committed: ${state.balances.committedPayoutAtomic}`,
+      `OUSD unpaid: ${state.balances.unpaidPayoutAtomic}`,
       `OUSD paid: ${state.balances.paidPayoutAtomic}`
     ].join(" | ")
   );

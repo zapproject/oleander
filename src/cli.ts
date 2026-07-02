@@ -63,6 +63,8 @@ Environment:
   ZAP_NODE_ID            Witness identity label
   ZAP_CLAIM_FEED         Claim feed path, defaults to claims/demo.json
   ZAP_WITNESS_DOMAIN     Optional domain filter, e.g. stablecoins
+  OUSD_SPONSOR_ID        Sponsor account label, defaults to sponsor:local
+  OUSD_RUN_BUDGET_ATOMIC Optional OUSD run budget in atomic units
 `);
 });
 
@@ -82,7 +84,9 @@ const collectLocalHarnessEvents = Effect.gen(function* () {
           witnessRole: role.id,
           observe: ({ claim }) => Effect.runPromise(toolCallWitness.observe(role, claim))
         },
-        payoutPerObservationAtomic: process.env.X402_BOUNTY_ATOMIC
+        payoutPerObservationAtomic: process.env.X402_BOUNTY_ATOMIC,
+        sponsorAccountId: process.env.OUSD_SPONSOR_ID,
+        sponsorBudgetAtomic: process.env.OUSD_RUN_BUDGET_ATOMIC
       }),
     catch: (error) => error instanceof Error ? error : new Error(String(error))
   });

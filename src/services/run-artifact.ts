@@ -4,6 +4,7 @@ import type { HarnessState } from "./ui-scenario-core.js";
 import { activeRegime } from "./ui-scenario-core.js";
 import type { X402WorkReport } from "./x402-work.js";
 import { parseHarnessEvent, validateHarnessEventOrder, type HarnessEvent } from "./harness-events.js";
+import { reduceHarnessBalances } from "./harness-balances.js";
 
 export interface RunArtifact {
   readonly schemaVersion: 1;
@@ -98,6 +99,7 @@ export const harnessEventsRunArtifact = (
   const finished = events.find((event) => event.type === "run_finished");
   const failed = events.find((event) => event.type === "run_failed");
   const receipts = events.filter((event) => event.type === "work_receipt_created");
+  const balances = reduceHarnessBalances(events);
 
   return {
     schemaVersion: 1,
@@ -110,6 +112,11 @@ export const harnessEventsRunArtifact = (
       claimCount: finished?.claimCount ?? events.filter((event) => event.type === "claim_loaded").length,
       observationCount: finished?.observationCount ?? events.filter((event) => event.type === "observation_signed").length,
       paymentAsset: "OUSD",
+      sponsorFundedAtomic: balances.sponsorFundedAtomic,
+      availableBudgetAtomic: balances.availableBudgetAtomic,
+      committedPayoutAtomic: balances.committedPayoutAtomic,
+      unpaidPayoutAtomic: balances.unpaidPayoutAtomic,
+      paidPayoutAtomic: balances.paidPayoutAtomic,
       payoutAtomic: finished?.payoutAtomic ?? receipts
         .reduce((sum, receipt) => sum + BigInt(receipt.amountAtomic), 0n)
         .toString(),

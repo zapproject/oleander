@@ -12,7 +12,9 @@ export interface HarnessBalanceAccount {
 export interface HarnessBalanceState {
   readonly asset: SettlementAsset;
   readonly sponsorFundedAtomic: string;
+  readonly availableBudgetAtomic: string;
   readonly committedPayoutAtomic: string;
+  readonly unpaidPayoutAtomic: string;
   readonly paidPayoutAtomic: string;
   readonly accounts: Record<string, HarnessBalanceAccount>;
 }
@@ -64,7 +66,9 @@ const toState = (input: {
   return {
     asset: "OUSD",
     sponsorFundedAtomic: input.sponsorFundedAtomic.toString(),
+    availableBudgetAtomic: (input.sponsorFundedAtomic - input.committedPayoutAtomic).toString(),
     committedPayoutAtomic: input.committedPayoutAtomic.toString(),
+    unpaidPayoutAtomic: (input.committedPayoutAtomic - input.paidPayoutAtomic).toString(),
     paidPayoutAtomic: input.paidPayoutAtomic.toString(),
     accounts
   };

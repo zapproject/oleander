@@ -24,11 +24,21 @@ const base = {
 
 const events: HarnessEvent[] = [
   { ...base, type: "run_started", eventId: "evt:001", claimCount: 1 },
-  { ...base, type: "claim_loaded", eventId: "evt:002", claim },
+  {
+    ...base,
+    type: "balance_changed",
+    eventId: "evt:002",
+    accountId: "sponsor:local",
+    asset: "OUSD",
+    deltaAtomic: "2000000",
+    balanceAtomic: "2000000",
+    reason: "sponsor_funded"
+  },
+  { ...base, type: "claim_loaded", eventId: "evt:003", claim },
   {
     ...base,
     type: "witness_started",
-    eventId: "evt:003",
+    eventId: "evt:004",
     claimId: claim.id,
     nodeId: "witness-availability",
     witnessRole: "research"
@@ -36,7 +46,7 @@ const events: HarnessEvent[] = [
   {
     ...base,
     type: "proposal_created",
-    eventId: "evt:004",
+    eventId: "evt:005",
     claimId: claim.id,
     response: { type: "yes_no", value: true },
     support: ["sig:fake"],
@@ -45,7 +55,7 @@ const events: HarnessEvent[] = [
   {
     ...base,
     type: "work_receipt_created",
-    eventId: "evt:005",
+    eventId: "evt:006",
     claimId: claim.id,
     nodeId: "witness-availability",
     workReceiptId: "work:001",
@@ -56,7 +66,18 @@ const events: HarnessEvent[] = [
   {
     ...base,
     type: "balance_changed",
-    eventId: "evt:006",
+    eventId: "evt:007",
+    accountId: "sponsor:local",
+    asset: "OUSD",
+    deltaAtomic: "-1000000",
+    balanceAtomic: "1000000",
+    reason: "settlement",
+    claimId: claim.id
+  },
+  {
+    ...base,
+    type: "balance_changed",
+    eventId: "evt:008",
     accountId: "witness-availability",
     asset: "OUSD",
     deltaAtomic: "1000000",
@@ -67,7 +88,7 @@ const events: HarnessEvent[] = [
   {
     ...base,
     type: "run_finished",
-    eventId: "evt:007",
+    eventId: "evt:009",
     claimCount: 1,
     observationCount: 1,
     asset: "OUSD",
@@ -101,7 +122,13 @@ describe("UI cockpit state", () => {
       observationCount: 0,
       earnedAtomic: "1000000"
     });
+    expect(state.balances.sponsorFundedAtomic).toBe("2000000");
+    expect(state.balances.availableBudgetAtomic).toBe("1000000");
+    expect(state.balances.unpaidPayoutAtomic).toBe("0");
     expect(state.balances.paidPayoutAtomic).toBe("1000000");
+    expect(state.balances.accounts["sponsor:local"]).toMatchObject({
+      balanceAtomic: "1000000"
+    });
     expect(state.eventLog.map((entry) => entry.type)).toEqual(events.map((event) => event.type));
   });
 
@@ -121,6 +148,7 @@ describe("UI cockpit state", () => {
       events[0]!,
       events[1]!,
       events[2]!,
+      events[3]!,
       {
         ...base,
         type: "run_failed",
@@ -148,7 +176,9 @@ describe("UI cockpit state", () => {
       balances: {
         asset: "OUSD",
         sponsorFundedAtomic: "0",
+        availableBudgetAtomic: "0",
         committedPayoutAtomic: "0",
+        unpaidPayoutAtomic: "0",
         paidPayoutAtomic: "0"
       }
     });

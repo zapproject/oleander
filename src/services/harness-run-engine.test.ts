@@ -40,6 +40,7 @@ describe("HarnessRunEngine", () => {
     expect(validateHarnessEventOrder(events)).toEqual([]);
     expect(events.map((event) => event.type)).toEqual([
       "run_started",
+      "balance_changed",
       "claim_loaded",
       "witness_started",
       "tool_call_started",
@@ -49,8 +50,16 @@ describe("HarnessRunEngine", () => {
       "proposal_created",
       "work_receipt_created",
       "balance_changed",
+      "balance_changed",
       "run_finished"
     ]);
+    expect(events.find((event) => event.type === "balance_changed" && event.reason === "sponsor_funded")).toMatchObject({
+      type: "balance_changed",
+      accountId: "sponsor:local",
+      asset: "OUSD",
+      deltaAtomic: "1000000",
+      balanceAtomic: "1000000"
+    });
     expect(events.find((event) => event.type === "work_receipt_created")).toMatchObject({
       type: "work_receipt_created",
       asset: "OUSD",
@@ -58,7 +67,18 @@ describe("HarnessRunEngine", () => {
       claimId: claim.id,
       nodeId: "witness-availability"
     });
-    expect(events.find((event) => event.type === "balance_changed")).toMatchObject({
+    expect(events.find((event) =>
+      event.type === "balance_changed" && event.reason === "settlement"
+    )).toMatchObject({
+      type: "balance_changed",
+      accountId: "sponsor:local",
+      asset: "OUSD",
+      deltaAtomic: "-1000000",
+      balanceAtomic: "0"
+    });
+    expect(events.find((event) =>
+      event.type === "balance_changed" && event.reason === "work_receipt"
+    )).toMatchObject({
       type: "balance_changed",
       accountId: "witness-availability",
       asset: "OUSD",
@@ -87,6 +107,7 @@ describe("HarnessRunEngine", () => {
     });
     expect(events.map((event) => event.type)).toEqual([
       "run_started",
+      "balance_changed",
       "claim_loaded",
       "witness_started",
       "tool_call_started",

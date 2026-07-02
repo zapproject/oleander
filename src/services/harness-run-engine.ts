@@ -21,9 +21,12 @@ export interface HarnessRunEngineOptions {
   readonly witness: HarnessWitnessRunner;
   readonly now?: () => string;
   readonly payoutPerObservationAtomic?: string;
+  readonly sponsorAccountId?: string;
+  readonly sponsorBudgetAtomic?: string;
 }
 
 const defaultPayoutAtomic = "1000000";
+const defaultSponsorAccountId = "sponsor:local";
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -33,12 +36,17 @@ export const collectHarnessRunEvents = async (
 ): Promise<ReadonlyArray<HarnessEvent>> => {
   const now = options.now ?? (() => new Date().toISOString());
   const payoutAtomic = options.payoutPerObservationAtomic ?? defaultPayoutAtomic;
+  const sponsorAccountId = options.sponsorAccountId ?? defaultSponsorAccountId;
+  const sponsorBudget = options.sponsorBudgetAtomic !== undefined
+    ? BigInt(options.sponsorBudgetAtomic)
+    : BigInt(payoutAtomic) * BigInt(options.claims.length);
   const gossip = createGossipStore();
   const events: HarnessEvent[] = [];
   let eventCount = 0;
   let totalPayout = 0n;
   let observationCount = 0;
   let witnessBalance = 0n;
+  let sponsorBalance = sponsorBudget;
 
   const base = (type: HarnessEvent["type"]): HarnessEventBase => {
     eventCount += 1;
@@ -54,6 +62,15 @@ export const collectHarnessRunEvents = async (
     ...base("run_started"),
     type: "run_started",
     claimCount: options.claims.length
+  });
+  events.push({
+    ...base("balance_changed"),
+    type: "balance_changed",
+    accountId: sponsorAccountId,
+    asset: "OUSD",
+    deltaAtomic: sponsorBudget.toString(),
+    balanceAtomic: sponsorBalance.toString(),
+    reason: "sponsor_funded"
   });
 
   try {
@@ -169,8 +186,19 @@ export const collectHarnessRunEvents = async (
 
       const payout = BigInt(payoutAtomic);
       totalPayout += payout;
+      sponsorBalance -= payout;
       witnessBalance += payout;
       observationCount += 1;
+      events.push({
+        ...base("balance_changed"),
+        type: "balance_changed",
+        accountId: sponsorAccountId,
+        asset: "OUSD",
+        deltaAtomic: `-${payout.toString()}`,
+        balanceAtomic: sponsorBalance.toString(),
+        reason: "settlement",
+        claimId: receipt.claimId
+      });
       events.push({
         ...base("balance_changed"),
         type: "balance_changed",

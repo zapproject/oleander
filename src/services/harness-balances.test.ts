@@ -48,7 +48,9 @@ describe("harness OUSD balances", () => {
     expect(state).toMatchObject({
       asset: "OUSD",
       sponsorFundedAtomic: "5000000",
+      availableBudgetAtomic: "4000000",
       committedPayoutAtomic: "1000000",
+      unpaidPayoutAtomic: "0",
       paidPayoutAtomic: "1000000"
     });
     expect(state.accounts["sponsor:ousd:mock"]).toMatchObject({
@@ -71,6 +73,7 @@ describe("harness OUSD balances", () => {
       events[2]!
     ]);
     expect(state.committedPayoutAtomic).toBe("1000000");
+    expect(state.unpaidPayoutAtomic).toBe("0");
     expect(state.paidPayoutAtomic).toBe("1000000");
     expect(state.accounts["witness-availability"]?.settledAtomic).toBe("1000000");
   });
@@ -78,6 +81,7 @@ describe("harness OUSD balances", () => {
   test("keeps unpaid receipts pending", () => {
     const state = reduceHarnessBalances([events[1]!]);
     expect(state.committedPayoutAtomic).toBe("1000000");
+    expect(state.unpaidPayoutAtomic).toBe("1000000");
     expect(state.paidPayoutAtomic).toBe("0");
     expect(state.accounts["witness-availability"]).toMatchObject({
       pendingAtomic: "1000000",
