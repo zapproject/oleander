@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ClaimSpec, Observation } from "../domain.js";
 import { validateHarnessEventOrder } from "./harness-events.js";
-import { collectHarnessRunEvents, type HarnessWitnessRunner } from "./harness-run-engine.js";
+import { collectHarnessRunEvents, streamHarnessRunEvents, type HarnessWitnessRunner } from "./harness-run-engine.js";
 
 const claim: ClaimSpec = {
   id: "claim:ousd:availability:001",
@@ -29,6 +29,34 @@ const fakeWitness: HarnessWitnessRunner = {
 };
 
 describe("HarnessRunEngine", () => {
+  test("streams events as an async iterable", async () => {
+    const streamed: string[] = [];
+    for await (const event of streamHarnessRunEvents({
+      runId: "run:stream",
+      claims: [claim],
+      witness: fakeWitness,
+      now: () => "2026-01-01T00:00:00.000Z"
+    })) {
+      streamed.push(event.type);
+    }
+
+    expect(streamed).toEqual([
+      "run_started",
+      "balance_changed",
+      "claim_loaded",
+      "witness_started",
+      "tool_call_started",
+      "tool_call_finished",
+      "observation_signed",
+      "gossip_published",
+      "proposal_created",
+      "work_receipt_created",
+      "balance_changed",
+      "balance_changed",
+      "run_finished"
+    ]);
+  });
+
   test("emits an ordered local run with gossip, proposal, OUSD receipt, and balance events", async () => {
     const events = await collectHarnessRunEvents({
       runId: "run:test",

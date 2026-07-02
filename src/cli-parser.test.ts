@@ -23,6 +23,10 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(["headless", "run", "--once"])).toEqual({ type: "headlessRunOnce" });
   });
 
+  test("parses headless streaming runs", () => {
+    expect(parseCliArgs(["headless", "stream", "--once"])).toEqual({ type: "headlessStreamOnce" });
+  });
+
   test("rejects deprecated terminal UI command names", () => {
     expect(() => parseCliArgs(["t" + "ui"])).toThrow("Unknown command");
   });

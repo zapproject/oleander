@@ -31,9 +31,9 @@ const defaultSponsorAccountId = "sponsor:local";
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-export const collectHarnessRunEvents = async (
+export async function* streamHarnessRunEvents(
   options: HarnessRunEngineOptions
-): Promise<ReadonlyArray<HarnessEvent>> => {
+): AsyncGenerator<HarnessEvent> {
   const now = options.now ?? (() => new Date().toISOString());
   const payoutAtomic = options.payoutPerObservationAtomic ?? defaultPayoutAtomic;
   const sponsorAccountId = options.sponsorAccountId ?? defaultSponsorAccountId;
@@ -48,6 +48,11 @@ export const collectHarnessRunEvents = async (
   let witnessBalance = 0n;
   let sponsorBalance = sponsorBudget;
 
+  const emit = <Event extends HarnessEvent>(event: Event): Event => {
+    events.push(event);
+    return event;
+  };
+
   const base = (type: HarnessEvent["type"]): HarnessEventBase => {
     eventCount += 1;
     return {
@@ -58,12 +63,12 @@ export const collectHarnessRunEvents = async (
     };
   };
 
-  events.push({
+  yield emit({
     ...base("run_started"),
     type: "run_started",
     claimCount: options.claims.length
   });
-  events.push({
+  yield emit({
     ...base("balance_changed"),
     type: "balance_changed",
     accountId: sponsorAccountId,
@@ -75,12 +80,12 @@ export const collectHarnessRunEvents = async (
 
   try {
     for (const claim of options.claims) {
-      events.push({
+      yield emit({
         ...base("claim_loaded"),
         type: "claim_loaded",
         claim
       });
-      events.push({
+      yield emit({
         ...base("witness_started"),
         type: "witness_started",
         claimId: claim.id,
@@ -89,7 +94,7 @@ export const collectHarnessRunEvents = async (
       });
 
       const callId = `call:${claim.id}:${options.witness.nodeId}:observe`;
-      events.push({
+      yield emit({
         ...base("tool_call_started"),
         type: "tool_call_started",
         claimId: claim.id,
@@ -102,7 +107,7 @@ export const collectHarnessRunEvents = async (
       try {
         observation = await options.witness.observe({ claim, runId: options.runId });
       } catch (error) {
-        events.push({
+        yield emit({
           ...base("tool_call_finished"),
           type: "tool_call_finished",
           claimId: claim.id,
@@ -115,7 +120,7 @@ export const collectHarnessRunEvents = async (
         throw error;
       }
 
-      events.push({
+      yield emit({
         ...base("tool_call_finished"),
         type: "tool_call_finished",
         claimId: claim.id,
@@ -125,7 +130,7 @@ export const collectHarnessRunEvents = async (
         ok: true,
         outputSummary: `signed observation ${observation.signature}`
       });
-      events.push({
+      yield emit({
         ...base("observation_signed"),
         type: "observation_signed",
         claimId: observation.claimId,
@@ -135,7 +140,7 @@ export const collectHarnessRunEvents = async (
       });
 
       const envelope = await Effect.runPromise(gossip.publishObservation(observation));
-      events.push({
+      yield emit({
         ...base("gossip_published"),
         type: "gossip_published",
         claimId: observation.claimId,
@@ -146,7 +151,7 @@ export const collectHarnessRunEvents = async (
 
       const oracle = reduceOracle(claim, [observation], new Date(now()));
       if (oracle.proposal) {
-        events.push({
+        yield emit({
           ...base("proposal_created"),
           type: "proposal_created",
           claimId: oracle.proposal.claimId,
@@ -156,7 +161,7 @@ export const collectHarnessRunEvents = async (
         });
       }
       if (oracle.dispute) {
-        events.push({
+        yield emit({
           ...base("dispute_created"),
           type: "dispute_created",
           claimId: oracle.dispute.claimId,
@@ -164,7 +169,7 @@ export const collectHarnessRunEvents = async (
         });
       }
       if (oracle.settlement) {
-        events.push({
+        yield emit({
           ...base("settlement_created"),
           type: "settlement_created",
           claimId: oracle.settlement.claimId,
@@ -173,7 +178,7 @@ export const collectHarnessRunEvents = async (
       }
 
       const receipt = workReceiptFromObservation(observation, now());
-      events.push({
+      yield emit({
         ...base("work_receipt_created"),
         type: "work_receipt_created",
         claimId: receipt.claimId,
@@ -189,7 +194,7 @@ export const collectHarnessRunEvents = async (
       sponsorBalance -= payout;
       witnessBalance += payout;
       observationCount += 1;
-      events.push({
+      yield emit({
         ...base("balance_changed"),
         type: "balance_changed",
         accountId: sponsorAccountId,
@@ -199,7 +204,7 @@ export const collectHarnessRunEvents = async (
         reason: "settlement",
         claimId: receipt.claimId
       });
-      events.push({
+      yield emit({
         ...base("balance_changed"),
         type: "balance_changed",
         accountId: receipt.nodeId,
@@ -211,7 +216,7 @@ export const collectHarnessRunEvents = async (
       });
     }
 
-    events.push({
+    yield emit({
       ...base("run_finished"),
       type: "run_finished",
       claimCount: options.claims.length,
@@ -220,7 +225,7 @@ export const collectHarnessRunEvents = async (
       payoutAtomic: totalPayout.toString()
     });
   } catch (error) {
-    events.push({
+    yield emit({
       ...base("run_failed"),
       type: "run_failed",
       error: errorMessage(error)
@@ -228,5 +233,14 @@ export const collectHarnessRunEvents = async (
   }
 
   assertValidHarnessEventOrder(events);
+}
+
+export const collectHarnessRunEvents = async (
+  options: HarnessRunEngineOptions
+): Promise<ReadonlyArray<HarnessEvent>> => {
+  const events: HarnessEvent[] = [];
+  for await (const event of streamHarnessRunEvents(options)) {
+    events.push(event);
+  }
   return events;
 };

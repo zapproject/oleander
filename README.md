@@ -36,6 +36,7 @@ bun run dev
 bun run dev -- --once
 bun run dev -- runs replay runs/run-a.json
 bun run dev -- headless run --once
+bun run dev -- headless stream --once
 bun run dev -- harness serve
 bun run dev -- roles list
 bun run dev -- x402 scenario
@@ -82,7 +83,7 @@ Oleander UI:
 bun run ui
 ```
 
-The default product surface is the Oleander UI. Use `oleander --once` for a one-shot cockpit render, `oleander runs replay <file>` to reopen a saved run in the cockpit, and `oleander headless run --once` when you need raw event JSON without the UI.
+The default product surface is the Oleander UI. Use `oleander --once` for a one-shot cockpit render, `oleander runs replay <file>` to reopen a saved run in the cockpit, `oleander headless run --once` when you need raw event JSON without the UI, and `oleander headless stream --once` when automation needs newline-delimited events as the run progresses.
 
 Browser harness:
 

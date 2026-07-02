@@ -5,6 +5,7 @@ export type CliCommand =
   | { readonly type: "ui"; readonly once: boolean }
   | { readonly type: "harnessServe" }
   | { readonly type: "headlessRunOnce" }
+  | { readonly type: "headlessStreamOnce" }
   | { readonly type: "claimsList" }
   | { readonly type: "rolesList" }
   | { readonly type: "x402Scenario" }
@@ -68,6 +69,9 @@ export const parseCliArgs = (args: ReadonlyArray<string>): CliCommand => {
 
   if (command === "harness" && subcommand === "serve") return { type: "harnessServe" };
   if (command === "headless" && subcommand === "run" && hasFlag(args, "--once")) return { type: "headlessRunOnce" };
+  if (command === "headless" && subcommand === "stream" && hasFlag(args, "--once")) {
+    return { type: "headlessStreamOnce" };
+  }
   if (command === "claims" && subcommand === "list") return { type: "claimsList" };
   if (command === "roles" && subcommand === "list") return { type: "rolesList" };
   if (command === "x402" && subcommand === "scenario") return { type: "x402Scenario" };

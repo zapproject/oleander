@@ -12,7 +12,7 @@ import { x402MockScenario } from "./services/x402-scenario.js";
 import { serveX402FacilitatorMock, serveX402ResourceMock } from "./services/x402-mock-server.js";
 import { x402WorkReportFromObservations } from "./services/x402-work.js";
 import { serveHarnessServer } from "./services/harness-server.js";
-import { collectHarnessRunEvents } from "./services/harness-run-engine.js";
+import { collectHarnessRunEvents, streamHarnessRunEvents, type HarnessRunEngineOptions } from "./services/harness-run-engine.js";
 import {
   harnessEventsRunArtifact,
   parseHarnessEventsFromRunArtifact,
@@ -45,6 +45,7 @@ Commands:
   oleander harness serve
   oleander runs replay <file>
   oleander headless run --once
+  oleander headless stream --once
   oleander headless runs verify <file>
   oleander roles list
   oleander x402 scenario
@@ -68,26 +69,31 @@ Environment:
 `);
 });
 
-const collectLocalHarnessEvents = Effect.gen(function* () {
+const localHarnessRunOptions = Effect.gen(function* () {
   const feed = yield* ClaimFeed;
   const toolCallWitness = yield* ToolCallWitness;
   const claims = yield* feed.list;
   const role = WitnessRoles.find((item) => item.id === "research") ?? WitnessRoles[0]!;
   const nodeId = process.env.ZAP_NODE_ID ?? "local-council";
+  return {
+    runId: `run:harness:${Date.now()}`,
+    claims,
+    witness: {
+      nodeId,
+      witnessRole: role.id,
+      observe: ({ claim }) => Effect.runPromise(toolCallWitness.observe(role, claim))
+    },
+    payoutPerObservationAtomic: process.env.X402_BOUNTY_ATOMIC,
+    sponsorAccountId: process.env.OUSD_SPONSOR_ID,
+    sponsorBudgetAtomic: process.env.OUSD_RUN_BUDGET_ATOMIC
+  } satisfies HarnessRunEngineOptions;
+});
+
+const collectLocalHarnessEvents = Effect.gen(function* () {
+  const options = yield* localHarnessRunOptions;
   return yield* Effect.tryPromise({
     try: () =>
-      collectHarnessRunEvents({
-        runId: `run:harness:${Date.now()}`,
-        claims,
-        witness: {
-          nodeId,
-          witnessRole: role.id,
-          observe: ({ claim }) => Effect.runPromise(toolCallWitness.observe(role, claim))
-        },
-        payoutPerObservationAtomic: process.env.X402_BOUNTY_ATOMIC,
-        sponsorAccountId: process.env.OUSD_SPONSOR_ID,
-        sponsorBudgetAtomic: process.env.OUSD_RUN_BUDGET_ATOMIC
-      }),
+      collectHarnessRunEvents(options),
     catch: (error) => error instanceof Error ? error : new Error(String(error))
   });
 });
@@ -121,6 +127,24 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
         const events = yield* collectLocalHarnessEvents;
         printArtifactPath(writeRunArtifact(harnessEventsRunArtifact(events, { claimFeedPath: process.env.ZAP_CLAIM_FEED })));
         printJson(events);
+      });
+    }
+
+    if (command.type === "headlessStreamOnce") {
+      return Effect.gen(function* () {
+        const options = yield* localHarnessRunOptions;
+        const events = yield* Effect.tryPromise({
+          try: async () => {
+            const streamed = [];
+            for await (const event of streamHarnessRunEvents(options)) {
+              streamed.push(event);
+              process.stdout.write(`${JSON.stringify(event)}\n`);
+            }
+            return streamed;
+          },
+          catch: (error) => error instanceof Error ? error : new Error(String(error))
+        });
+        printArtifactPath(writeRunArtifact(harnessEventsRunArtifact(events, { claimFeedPath: process.env.ZAP_CLAIM_FEED })));
       });
     }
 
