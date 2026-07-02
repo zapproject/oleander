@@ -1,8 +1,8 @@
 # Oleander
 
-Oleander is the first CLI harness for the ZAP Witness Council.
+Oleander is an installable, UI-first agentic harness for the ZAP Witness Council.
 
-The harness runs agentic witnesses over typed claim feeds using TypeScript and Effect services. DeepSeek is used through one shared API-key service; the key is read from `DEEPSEEK_API_KEY` or a local key file such as `../deepseek.md`. Set `DEEPSEEK_MOCK=1` to exercise the CLI without live model calls.
+The harness runs agentic witnesses over typed claim feeds using TypeScript and Effect services. The default `oleander` command opens the cockpit view; `headless` commands are reserved for raw JSON or NDJSON automation. DeepSeek is used through one shared API-key service; the key is read from `DEEPSEEK_API_KEY` or a local key file such as `../deepseek.md`. Set `DEEPSEEK_MOCK=1` to exercise the harness without live model calls.
 
 ## Start Here
 
@@ -55,8 +55,10 @@ Installable CLI target:
 ```bash
 bun run build
 npm link
+oleander
 oleander --once
 oleander runs replay runs/run-a.json
+oleander headless run --once
 ```
 
 Docker testbed:
@@ -91,7 +93,7 @@ Browser harness:
 bun run harness
 ```
 
-Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, OUSD bounty, ZAP reward, oracle settlement, and run settlement. The engine-backed event spine is also available as SSE at `/engine-events?regime=full`; it emits the shared harness events used by headless runs, artifacts, replay, OUSD budget accounting, and the local run engine. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
+Open `http://localhost:5174`. The CLI serves the D3 harness and the browser opens `/engine-events?regime=<selected>` first, using the same shared event spine as headless runs, artifacts, replay, OUSD budget accounting, and the local run engine. The legacy `/events` stream remains as a browser compatibility fallback. The browser shows claim routing, witness/tool activity, receipts, sponsor funded OUSD, sponsor remaining OUSD, and witness OUSD earnings. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server
@@ -139,7 +141,7 @@ The current signer is a deterministic development signer scoped by `ZAP_NODE_ID`
 
 ## Witness Economy Boundary
 
-Stablecoins pay for completed oracle work. ZAP accounts for utility, staking, reputation, amplification, and council-governed incentives. Rewards must derive from verifiable work receipts such as signed observations, valid disputes, availability proofs, or quality/amplification receipts. The Council governs incentive policy; typed claims and the oracle reducer govern truth.
+OUSD pays for completed oracle work. ZAP accounts for utility, staking, reputation, amplification, and council-governed incentives. Rewards must derive from verifiable work receipts such as signed observations, valid disputes, availability proofs, or quality/amplification receipts. The Council governs incentive policy; typed claims and the oracle reducer govern truth.
 
 ## Current Capstone Slice
 
