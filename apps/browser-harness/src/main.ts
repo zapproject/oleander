@@ -45,6 +45,8 @@ interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
   readonly source: string | GraphNode;
   readonly target: string | GraphNode;
   active?: boolean;
+  pulse?: boolean;
+  pulseTimer?: number;
 }
 
 const claims = (claimsJson as ClaimSpec[]).map((claim) => ({ ...claim }));
@@ -257,7 +259,12 @@ const resetRun = () => {
   for (const node of nodes) {
     if (node.type === "claim") node.status = "pending";
   }
-  for (const link of links) link.active = false;
+  for (const link of links) {
+    link.active = false;
+    link.pulse = false;
+    if (link.pulseTimer) window.clearTimeout(link.pulseTimer);
+    link.pulseTimer = undefined;
+  }
   resetOracleStats(oracleStats);
   resetOusdBalanceState(ousdBalanceState);
   renderAll();
@@ -299,9 +306,20 @@ const ensureActiveClaim = (incomingClaim: ClaimSpec): ClaimSpec => {
   return claim;
 };
 
+const pulseLink = (link: GraphLink | undefined) => {
+  if (!link) return;
+  link.active = true;
+  link.pulse = true;
+  if (link.pulseTimer) window.clearTimeout(link.pulseTimer);
+  link.pulseTimer = window.setTimeout(() => {
+    link.pulse = false;
+    link.pulseTimer = undefined;
+    renderGraphState();
+  }, 760);
+};
+
 const activateOracleSinkLink = (oracle: string, sink: "receipts" | "gossip") => {
-  const link = linkById.get(`${oracle.replace("witness-", "")}-${sink}`);
-  if (link) link.active = true;
+  pulseLink(linkById.get(`${oracle.replace("witness-", "")}-${sink}`));
 };
 
 const markClaimObserved = (claimId: string, oracle: string) => {
@@ -313,8 +331,8 @@ const markClaimObserved = (claimId: string, oracle: string) => {
   node.status = "observed";
   const feedLink = linkById.get(`feed-${claimId}`);
   const oracleLink = linkById.get(`${claimId}-${oracle}`);
-  if (feedLink) feedLink.active = true;
-  if (oracleLink) oracleLink.active = true;
+  pulseLink(feedLink);
+  pulseLink(oracleLink);
   stat.claimIds.push(claimId);
   stat.observations += 1;
   activeIndex += 1;
@@ -371,14 +389,12 @@ const handleLiveEvent = (event: LiveHarnessEvent) => {
   if (event.type === "claim_loaded") {
     const claim = ensureActiveClaim(event.claim);
     selectedNodeId = claim.id;
-    const feedLink = linkById.get(`feed-${claim.id}`);
-    if (feedLink) feedLink.active = true;
+    pulseLink(linkById.get(`feed-${claim.id}`));
   }
 
   if (event.type === "witness_started" || event.type === "tool_call_started" || event.type === "tool_call_finished") {
     selectedNodeId = event.claimId;
-    const oracleLink = linkById.get(`${event.claimId}-${event.nodeId}`);
-    if (oracleLink) oracleLink.active = true;
+    pulseLink(linkById.get(`${event.claimId}-${event.nodeId}`));
   }
 
   if (event.type === "observation_signed") {
@@ -639,6 +655,7 @@ const renderGraphState = () => {
     });
   linkSelection
     .classed("active", (link) => Boolean(link.active))
+    .classed("pulse", (link) => Boolean(link.pulse))
     .attr("opacity", (link) => {
       const sourceId = typeof link.source === "string" ? link.source : link.source.id;
       const targetId = typeof link.target === "string" ? link.target : link.target.id;

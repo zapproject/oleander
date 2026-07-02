@@ -24,6 +24,7 @@
 body {
   margin: 0;
   min-width: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 20% 10%, rgba(70, 194, 255, 0.12), transparent 34%),
     radial-gradient(circle at 80% 0%, rgba(70, 194, 255, 0.08), transparent 30%),
@@ -70,6 +71,7 @@ button.active {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 10px 12px;
 }
 
@@ -77,6 +79,7 @@ button.active {
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -119,13 +122,15 @@ p {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
 
 .metrics {
   border-radius: 8px;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
 }
 
 .metric {
@@ -159,7 +164,8 @@ p {
   min-height: min(560px, calc(100vh - 166px));
   border-radius: 8px;
   display: grid;
-  grid-template-columns: minmax(190px, 240px) minmax(360px, 1fr) minmax(250px, 300px);
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(250px, 300px);
+  grid-template-areas: "left graph right";
   overflow: hidden;
 }
 
@@ -170,10 +176,12 @@ p {
 }
 
 .left-panel {
+  grid-area: left;
   border-right: 1px solid var(--line);
 }
 
 .right-panel {
+  grid-area: right;
   border-left: 1px solid var(--line);
 }
 
@@ -272,9 +280,11 @@ p {
 }
 
 .claim-row strong,
+.balance-row strong,
 .receipt-row strong,
 .selected-node strong {
   font-size: 11px;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
@@ -293,8 +303,10 @@ p {
 }
 
 .graph-shell {
+  grid-area: graph;
   position: relative;
   min-width: 0;
+  min-height: 420px;
   overflow: hidden;
   background:
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -363,19 +375,36 @@ p {
 
 .link {
   stroke: #3e4b41;
-  stroke-opacity: 0.75;
+  stroke-opacity: 0.42;
 }
 
 .link.active {
-  stroke: #71d4a4;
-  stroke-width: 1.9px;
-  stroke-dasharray: 5 7;
-  animation: dash 900ms linear infinite;
+  stroke: #467a5a;
+  stroke-width: 1.25px;
+  stroke-opacity: 0.62;
 }
 
-@keyframes dash {
-  to {
-    stroke-dashoffset: -24;
+.link.pulse {
+  stroke: #f7c948;
+  stroke-width: 2.5px;
+  stroke-opacity: 0.95;
+  animation: link-pulse 760ms ease-out;
+}
+
+@keyframes link-pulse {
+  0% {
+    stroke-opacity: 0.1;
+    stroke-width: 1.25px;
+  }
+
+  32% {
+    stroke-opacity: 0.95;
+    stroke-width: 2.5px;
+  }
+
+  100% {
+    stroke-opacity: 0.62;
+    stroke-width: 1.25px;
   }
 }
 
@@ -393,12 +422,8 @@ p {
 .balance-row,
 .receipt-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 3px 6px;
-}
-
-.balance-row strong {
-  font-size: 11px;
 }
 
 .balance-row small {
@@ -410,8 +435,9 @@ p {
 
 .event-row {
   display: grid;
-  grid-template-columns: 42px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr);
   gap: 6px;
+  overflow-wrap: anywhere;
 }
 
 .verbose-panel {
@@ -428,4 +454,81 @@ p {
   color: #d5dfd5;
   font-size: 10px;
   line-height: 1.42;
+}
+
+@media (max-width: 1100px) {
+  #app {
+    min-height: auto;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .workspace {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "graph graph"
+      "left right";
+    overflow: visible;
+  }
+
+  .graph-shell {
+    min-height: min(560px, 62vh);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .left-panel,
+  .right-panel {
+    max-height: none;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .left-panel {
+    border-right: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 760px) {
+  #app {
+    padding: 8px;
+  }
+
+  .brand {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "graph"
+      "right"
+      "left";
+  }
+
+  .graph-shell {
+    min-height: 430px;
+  }
+
+  .left-panel {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .right-panel {
+    border-top: 1px solid var(--line);
+  }
 }
