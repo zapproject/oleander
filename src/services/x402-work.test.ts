@@ -26,8 +26,10 @@ describe("x402 work incentives", () => {
     );
 
     expect(report.sponsor.id).toBe("sponsor:test");
+    expect(report.sponsor.paymentAsset).toBe("OUSD");
     expect(report.oracle.nodeId).toBe("oracle-a");
     expect(report.incentives).toHaveLength(2);
+    expect(report.incentives[0]?.stablecoinBounty.stablecoin).toBe("OUSD");
     expect(report.incentives[0]?.stablecoinBounty.amountAtomic).toBe("1000000");
     expect(report.incentives[0]?.zapReward.zapAmountAtomic).toBe("250");
     expect(report.totals).toEqual({

@@ -303,7 +303,7 @@ const markClaimObserved = (claimId: string, oracle: string) => {
 
 const addBounty = (oracle: string, amountAtomic: string) => {
   const stat = oracleStats[oracle];
-  if (stat) stat.usdcAtomic += BigInt(amountAtomic);
+  if (stat) stat.ousdAtomic += BigInt(amountAtomic);
 };
 
 const addZapReward = (oracle: string, amountAtomic: string) => {
@@ -438,11 +438,11 @@ const counts = () => {
 
 const renderMetrics = () => {
   const totalObserved = Object.values(oracleStats).reduce((sum, stat) => sum + stat.observations, 0);
-  const totalUsdc = Object.values(oracleStats).reduce((sum, stat) => sum + stat.usdcAtomic, 0n);
+  const totalOusd = Object.values(oracleStats).reduce((sum, stat) => sum + stat.ousdAtomic, 0n);
   const totalZap = Object.values(oracleStats).reduce((sum, stat) => sum + stat.zapAtomic, 0n);
   el("metric-claims").textContent = String(activeClaims.length);
   el("metric-observed").textContent = String(totalObserved);
-  el("metric-usdc").textContent = totalUsdc.toString();
+  el("metric-ousd").textContent = totalOusd.toString();
   el("metric-zap").textContent = totalZap.toString();
   el("metric-regime").textContent = activeRegime.label;
   if (running) {
@@ -512,7 +512,7 @@ const renderReceipts = () => {
   for (const stat of Object.values(oracleStats)) {
     const row = document.createElement("div");
     row.className = "receipt-row";
-    row.innerHTML = `<strong>${stat.nodeId}</strong><span>${stat.observations} obs</span><span>${stat.usdcAtomic.toString()} USDC atomic</span><span>${stat.zapAtomic.toString()} ZAP atomic</span>`;
+    row.innerHTML = `<strong>${stat.nodeId}</strong><span>${stat.observations} obs</span><span>${stat.ousdAtomic.toString()} OUSD atomic</span><span>${stat.zapAtomic.toString()} ZAP atomic</span>`;
     container.appendChild(row);
   }
 };

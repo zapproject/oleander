@@ -8,11 +8,11 @@ import {
 
 const claims: ClaimSpec[] = [
   {
-    id: "claim:x402:50:usdc-peg-001",
+    id: "claim:x402:50:ousd-peg-001",
     kind: "yes_no",
     domain: "stablecoins",
-    statement: "USDC stayed in band.",
-    sources: ["local-evidence://stablecoins/usdc"],
+    statement: "OUSD stayed in band.",
+    sources: ["local-evidence://stablecoins/ousd"],
     livenessSeconds: 120
   },
   {
@@ -44,7 +44,7 @@ describe("browser harness server", () => {
 
   test("filters claims by visual harness regime", () => {
     expect(claimsForHarnessRegime(claims, "sponsor")).toHaveLength(0);
-    expect(claimsForHarnessRegime(claims, "peg").map((claim) => claim.id)).toEqual(["claim:x402:50:usdc-peg-001"]);
+    expect(claimsForHarnessRegime(claims, "peg").map((claim) => claim.id)).toEqual(["claim:x402:50:ousd-peg-001"]);
     expect(claimsForHarnessRegime(claims, "stablecoins")).toHaveLength(2);
     expect(claimsForHarnessRegime(claims, "full")).toHaveLength(3);
   });

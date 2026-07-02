@@ -1,10 +1,10 @@
 [
   {
-    "id": "claim:x402:ten:usdc-peg-001",
+    "id": "claim:x402:ten:ousd-peg-001",
     "kind": "yes_no",
     "domain": "stablecoins",
-    "statement": "USDC remained within the sponsor policy band during the mock x402 observation window.",
-    "sources": ["local-evidence://stablecoins/usdc-peg-001"],
+    "statement": "OUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/ousd-peg-001"],
     "livenessSeconds": 120
   },
   {
@@ -32,11 +32,11 @@
     "livenessSeconds": 120
   },
   {
-    "id": "claim:x402:ten:circle-attestation-005",
+    "id": "claim:x402:ten:openusd-attestation-005",
     "kind": "hash_attestation",
     "domain": "stablecoins",
-    "statement": "The Circle reserve attestation in the sponsor packet matches the expected mock document hash.",
-    "sources": ["local-evidence://stablecoins/circle-attestation-005"],
+    "statement": "The OpenUSD reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/openusd-attestation-005"],
     "livenessSeconds": 300
   },
   {

@@ -112,19 +112,19 @@ export const x402HarnessSteps = (file = composeFile): ReadonlyArray<HarnessStep>
   },
   {
     id: "availability",
-    label: "Availability oracle earns USDC/ZAP receipts",
+    label: "Availability oracle earns OUSD/ZAP receipts",
     command: "docker",
     args: ["compose", "-f", file, "run", "--rm", "witness-availability"]
   },
   {
     id: "attestation",
-    label: "Attestation oracle earns USDC/ZAP receipts",
+    label: "Attestation oracle earns OUSD/ZAP receipts",
     command: "docker",
     args: ["compose", "-f", file, "run", "--rm", "witness-attestation"]
   },
   {
     id: "peg",
-    label: "Peg oracle earns USDC/ZAP receipts",
+    label: "Peg oracle earns OUSD/ZAP receipts",
     command: "docker",
     args: ["compose", "-f", file, "run", "--rm", "witness-peg"]
   },
@@ -311,11 +311,11 @@ export const applyStructuredOutput = (state: HarnessState, step: StepState, outp
     state.reports.push(summary.report);
     pushLog(
       state,
-      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} USDC atomic, ${summary.report.zapAtomic} ZAP atomic`
+      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} OUSD atomic, ${summary.report.zapAtomic} ZAP atomic`
     );
     pushVerboseLog(
       state,
-      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} USDC atomic, ${summary.report.zapAtomic} ZAP atomic`
+      `parsed ${summary.report.nodeId}: ${summary.report.observationCount} observations, ${summary.report.stablecoinAtomic} OUSD atomic, ${summary.report.zapAtomic} ZAP atomic`
     );
   }
 };

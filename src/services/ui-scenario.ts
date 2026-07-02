@@ -12,9 +12,9 @@ import {
   type HarnessState,
   type HarnessStepStatus,
   type StepState
-} from "./tui-harness-core.js";
-import { runHarnessProcess } from "./tui-harness-process.js";
-import { tuiRunArtifact, writeRunArtifact } from "./run-artifact.js";
+} from "./ui-scenario-core.js";
+import { runHarnessProcess } from "./ui-scenario-process.js";
+import { uiScenarioRunArtifact, writeRunArtifact } from "./run-artifact.js";
 
 export {
   defaultHarnessEnv,
@@ -29,7 +29,7 @@ export {
   type HarnessStep,
   type HarnessStepStatus,
   type OracleReportSummary
-} from "./tui-harness-core.js";
+} from "./ui-scenario-core.js";
 
 const color = {
   reset: "\x1b[0m",
@@ -59,13 +59,13 @@ const write = (value: string) => {
 const render = (state: HarnessState) => {
   write("\x1b[2J\x1b[H");
   write(`${paint("ZAP x402 Oracle Harness", `${color.bold}${color.cyan}`)}\n`);
-  write(`${paint("Sponsor -> paid feed -> oracle workers -> signed work -> USDC/ZAP receipts", color.dim)}\n\n`);
+  write(`${paint("Sponsor -> paid feed -> oracle workers -> signed work -> OUSD/ZAP receipts", color.dim)}\n\n`);
   write(`Run: ${state.runCount}  State: ${state.running ? "running" : "idle"}\n`);
   write(`Regime: ${activeRegime(state).label}\n`);
   write(`Output: ${state.showVerbose ? "verbose raw tail" : "summary"}\n`);
   write(`Sponsor: ${defaultHarnessEnv.X402_SPONSOR_ID}\n`);
   write(`Claim feed: ${defaultHarnessEnv.ZAP_SPONSORED_CLAIM_FEED}\n`);
-  write(`Incentive: ${defaultHarnessEnv.X402_BOUNTY_ATOMIC} USDC atomic + ${defaultHarnessEnv.ZAP_REWARD_ATOMIC} ZAP atomic per observation\n\n`);
+  write(`Incentive: ${defaultHarnessEnv.X402_BOUNTY_ATOMIC} OUSD atomic + ${defaultHarnessEnv.ZAP_REWARD_ATOMIC} ZAP atomic per observation\n\n`);
 
   write("Steps\n");
   for (const step of state.steps) {
@@ -103,9 +103,9 @@ const render = (state: HarnessState) => {
     const totalObservations = state.reports.reduce((sum, report) => sum + report.observationCount, 0);
     const totalStablecoin = state.reports.reduce((sum, report) => sum + BigInt(report.stablecoinAtomic), 0n);
     const totalZap = state.reports.reduce((sum, report) => sum + BigInt(report.zapAtomic), 0n);
-    write(` Total: ${totalObservations} observations, ${totalStablecoin.toString()} USDC atomic, ${totalZap.toString()} ZAP atomic\n`);
+    write(` Total: ${totalObservations} observations, ${totalStablecoin.toString()} OUSD atomic, ${totalZap.toString()} ZAP atomic\n`);
     for (const report of state.reports) {
-      write(` - ${report.nodeId}: ${report.observationCount} obs | ${report.stablecoinAtomic} USDC atomic | ${report.zapAtomic} ZAP atomic\n`);
+      write(` - ${report.nodeId}: ${report.observationCount} obs | ${report.stablecoinAtomic} OUSD atomic | ${report.zapAtomic} ZAP atomic\n`);
       const visibleClaims = report.claimIds.slice(0, 6).join(", ");
       const remaining = report.claimIds.length > 6 ? ` ... +${report.claimIds.length - 6}` : "";
       write(`   claims: ${visibleClaims}${remaining}\n`);
@@ -193,14 +193,14 @@ const runScenario = async (state: HarnessState, env: NodeJS.ProcessEnv) => {
     await cleanup(state, env);
   }
   state.running = false;
-  writeRunArtifact(tuiRunArtifact(state, {
+  writeRunArtifact(uiScenarioRunArtifact(state, {
     claimFeedPath: env.ZAP_SPONSORED_CLAIM_FEED,
     errors: failed ? ["failure detected; cleanup attempted"] : undefined
   }));
   render(state);
 };
 
-export const runTuiHarness = async (options?: { readonly autoRun?: boolean; readonly verbose?: boolean }) => {
+export const runUiScenario = async (options?: { readonly autoRun?: boolean; readonly verbose?: boolean }) => {
   const env = {
     ...process.env,
     ...Object.fromEntries(

@@ -24,7 +24,7 @@ describe("chooseAdapter", () => {
   });
 
   test("uses price-feed for price sources", () => {
-    expect(chooseAdapter(claim("yes_no"), "https://www.coingecko.com/en/coins/usd-coin")).toBe("price-feed");
+    expect(chooseAdapter(claim("yes_no"), "https://prices.example.com/ousd")).toBe("price-feed");
   });
 
   test("falls back to http", () => {

@@ -58,7 +58,7 @@ export type HarnessEvent =
       readonly runId: string;
       readonly claimId: string;
       readonly nodeId: string;
-      readonly stablecoin: "USDC";
+      readonly stablecoin: "OUSD";
       readonly amountAtomic: string;
       readonly payoutAddress: string;
       readonly emittedAt: string;
@@ -158,7 +158,7 @@ export const buildHarnessEvents = (
         runId,
         claimId: claim.id,
         nodeId,
-        stablecoin: "USDC",
+        stablecoin: "OUSD",
         amountAtomic: bountyPerObservationAtomic,
         payoutAddress: `mock-wallet:${nodeId}`,
         emittedAt: now()

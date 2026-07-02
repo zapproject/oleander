@@ -22,13 +22,13 @@ docker compose -f "$COMPOSE_FILE" up -d x402-resource
 echo "Sponsor funds and publishes paid claim feed: $ZAP_SPONSORED_CLAIM_FEED"
 docker compose -f "$COMPOSE_FILE" run --rm sponsor-feed
 
-echo "Running availability oracle with USDC/ZAP incentives..."
+echo "Running availability oracle with OUSD/ZAP incentives..."
 docker compose -f "$COMPOSE_FILE" run --rm witness-availability
 
-echo "Running attestation oracle with USDC/ZAP incentives..."
+echo "Running attestation oracle with OUSD/ZAP incentives..."
 docker compose -f "$COMPOSE_FILE" run --rm witness-attestation
 
-echo "Running peg oracle with USDC/ZAP incentives..."
+echo "Running peg oracle with OUSD/ZAP incentives..."
 docker compose -f "$COMPOSE_FILE" run --rm witness-peg
 
 echo "x402 mock scenario completed."

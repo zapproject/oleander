@@ -10,9 +10,9 @@ import {
   summarizeHarnessOutput,
   type HarnessState,
   x402HarnessSteps
-} from "./tui-harness-core.js";
+} from "./ui-scenario-core.js";
 
-describe("tui harness", () => {
+describe("ui harness", () => {
   test("defines the sponsor/oracle x402 run sequence", () => {
     expect(x402HarnessSteps("compose.yml").map((step) => step.id)).toEqual([
       "build",

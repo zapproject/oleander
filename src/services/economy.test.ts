@@ -25,12 +25,12 @@ describe("witness economy receipts", () => {
   test("derives stablecoin bounty receipt from work", () => {
     const receipt = workReceiptFromObservation(observation);
     expect(stablecoinBountyFromWork(receipt, {
-      stablecoin: "USDC",
+      stablecoin: "OUSD",
       amountAtomic: "1000000",
       payoutAddress: "0x0000000000000000000000000000000000000001"
     })).toEqual({
       workReceiptId: receipt.id,
-      stablecoin: "USDC",
+      stablecoin: "OUSD",
       amountAtomic: "1000000",
       payoutAddress: "0x0000000000000000000000000000000000000001"
     });

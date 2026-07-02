@@ -4,23 +4,23 @@ import type { ClaimSpec, WitnessRole } from "../domain.js";
 import { ConfigService, type AppConfig } from "./config.js";
 import { DeepSeek } from "./deepseek.js";
 import { Evidence } from "./evidence.js";
-import { OpenClaw, OpenClawLive, responseFromModel } from "./openclaw.js";
+import { ToolCallWitness, DeepSeekToolCallWitnessLive, responseFromModel } from "./tool-call-witness.js";
 import { SignerLive } from "./signer.js";
 import { ValidatorLive } from "./validator.js";
 
 const claim: ClaimSpec = {
-  id: "claim:test:openclaw",
+  id: "claim:test:tool-call-witness",
   kind: "yes_no",
   domain: "stablecoins",
-  statement: "USDC stayed within configured tolerance for the observation window.",
-  sources: ["https://example.com/usdc"],
+  statement: "OUSD stayed within configured tolerance for the observation window.",
+  sources: ["https://example.com/ousd"],
   livenessSeconds: 60
 };
 
 const role: WitnessRole = {
   id: "research",
   title: "Research Witness",
-  responsibility: "Evaluate evidence collection strategy through OpenCLAW."
+  responsibility: "Evaluate evidence collection strategy through DeepSeek tool-call witness."
 };
 
 const config: AppConfig = {
@@ -41,11 +41,11 @@ const config: AppConfig = {
   x402Mode: "mock"
 };
 
-const runOpenClaw = <A>(effect: Effect.Effect<A, Error, OpenClaw>, modelOutput: string) =>
+const runToolCallWitness = <A>(effect: Effect.Effect<A, Error, ToolCallWitness>, modelOutput: string) =>
   Effect.runPromise(
     Effect.provide(
       effect,
-      OpenClawLive.pipe(
+      DeepSeekToolCallWitnessLive.pipe(
         Layer.provide(
           Layer.mergeAll(
             Layer.succeed(ConfigService, config),
@@ -55,7 +55,7 @@ const runOpenClaw = <A>(effect: Effect.Effect<A, Error, OpenClaw>, modelOutput: 
               collect: () =>
                 Effect.succeed([
                   {
-                    uri: "https://example.com/usdc",
+                    uri: "https://example.com/ousd",
                     adapter: "http",
                     ok: true,
                     hash: "a".repeat(64),
@@ -91,12 +91,12 @@ describe("responseFromModel", () => {
   });
 });
 
-describe("OpenClaw", () => {
+describe("ToolCallWitness", () => {
   test("creates an evidence plan from a ClaimSpec", async () => {
-    const plan = await runOpenClaw(
+    const plan = await runToolCallWitness(
       Effect.gen(function* () {
-        const openclaw = yield* OpenClaw;
-        return yield* openclaw.plan(role, claim);
+        const toolCallWitness = yield* ToolCallWitness;
+        return yield* toolCallWitness.plan(role, claim);
       }),
       "unused"
     );
@@ -104,13 +104,14 @@ describe("OpenClaw", () => {
     expect(plan.claimId).toBe(claim.id);
     expect(plan.roleId).toBe(role.id);
     expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps.join("\n")).toContain("DeepSeek tool-call");
   });
 
   test("emits a signed structured observation", async () => {
-    const observation = await runOpenClaw(
+    const observation = await runToolCallWitness(
       Effect.gen(function* () {
-        const openclaw = yield* OpenClaw;
-        return yield* openclaw.observe(role, claim);
+        const toolCallWitness = yield* ToolCallWitness;
+        return yield* toolCallWitness.observe(role, claim);
       }),
       '{"type":"yes_no","value":true}'
     );
@@ -118,16 +119,16 @@ describe("OpenClaw", () => {
     expect(observation.claimId).toBe(claim.id);
     expect(observation.witnessRole).toBe(role.id);
     expect(observation.response).toEqual({ type: "yes_no", value: true });
-    expect(observation.evidence).toEqual([{ uri: "https://example.com/usdc", note: `http ok sha256:${"a".repeat(64)}` }]);
+    expect(observation.evidence).toEqual([{ uri: "https://example.com/ousd", note: `http ok sha256:${"a".repeat(64)}` }]);
     expect(observation.signature.length).toBeGreaterThan(10);
   });
 
   test("cannot emit a mismatched response past validation", async () => {
     await expect(
-      runOpenClaw(
+      runToolCallWitness(
         Effect.gen(function* () {
-          const openclaw = yield* OpenClaw;
-          return yield* openclaw.observe(role, claim);
+          const toolCallWitness = yield* ToolCallWitness;
+          return yield* toolCallWitness.observe(role, claim);
         }),
         '{"type":"scalar_int","value":100,"decimals":2}'
       )

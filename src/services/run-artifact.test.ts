@@ -3,7 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import type { Observation } from "../domain.js";
-import { writeRunArtifact, x402WorkRunArtifact } from "./run-artifact.js";
+import type { HarnessEvent } from "./harness-events.js";
+import {
+  harnessEventsRunArtifact,
+  parseHarnessEventsFromRunArtifact,
+  verifyRunArtifact,
+  writeRunArtifact,
+  x402WorkRunArtifact
+} from "./run-artifact.js";
 import { x402WorkReportFromObservations } from "./x402-work.js";
 
 const observation = (claimId: string): Observation => ({
@@ -37,6 +44,7 @@ describe("run artifacts", () => {
         summary: {
           oracleNodeId: "oracle-a",
           observations: 1,
+          paymentAsset: "OUSD",
           stablecoinAtomic: "1000000",
           zapAtomic: "1000000000000000000"
         }
@@ -44,5 +52,143 @@ describe("run artifacts", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  test("creates a summary artifact from harness events", () => {
+    const events: HarnessEvent[] = [
+      {
+        type: "run_started",
+        eventId: "evt:1",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:00.000Z",
+        claimCount: 1
+      },
+      {
+        type: "work_receipt_created",
+        eventId: "evt:2",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        claimId: "claim:ousd:test",
+        nodeId: "witness-a",
+        workReceiptId: "work:test",
+        asset: "OUSD",
+        amountAtomic: "1000000",
+        payoutAddress: "mock-wallet:witness-a"
+      },
+      {
+        type: "run_finished",
+        eventId: "evt:3",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:02.000Z",
+        claimCount: 1,
+        observationCount: 1,
+        asset: "OUSD",
+        payoutAtomic: "1000000"
+      }
+    ];
+
+    expect(harnessEventsRunArtifact(events, {
+      claimFeedPath: "claims/demo.json",
+      now: new Date("2026-01-01T00:00:03.000Z")
+    })).toMatchObject({
+      schemaVersion: 1,
+      runId: "run-harness-test",
+      command: "headless run --once",
+      claimFeedPath: "claims/demo.json",
+      summary: {
+        eventCount: 3,
+        claimCount: 1,
+        observationCount: 1,
+        paymentAsset: "OUSD",
+        payoutAtomic: "1000000",
+        failed: false
+      },
+      payload: { events }
+    });
+  });
+
+  test("verifies harness event artifacts", () => {
+    const artifact = harnessEventsRunArtifact([
+      {
+        type: "run_started",
+        eventId: "evt:1",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:00.000Z",
+        claimCount: 0
+      },
+      {
+        type: "run_finished",
+        eventId: "evt:2",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        claimCount: 0,
+        observationCount: 0,
+        asset: "OUSD",
+        payoutAtomic: "0"
+      }
+    ]);
+
+    expect(verifyRunArtifact(artifact)).toEqual({ ok: true, errors: [] });
+  });
+
+  test("parses harness events from a saved run artifact", () => {
+    const artifact = harnessEventsRunArtifact([
+      {
+        type: "run_started",
+        eventId: "evt:1",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:00.000Z",
+        claimCount: 0
+      },
+      {
+        type: "run_finished",
+        eventId: "evt:2",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        claimCount: 0,
+        observationCount: 0,
+        asset: "OUSD",
+        payoutAtomic: "0"
+      }
+    ]);
+
+    expect(parseHarnessEventsFromRunArtifact(artifact).map((event) => event.type)).toEqual([
+      "run_started",
+      "run_finished"
+    ]);
+  });
+
+  test("rejects replay for non-harness artifacts", () => {
+    const report = x402WorkReportFromObservations([observation("claim:a")]);
+    expect(() => parseHarnessEventsFromRunArtifact(x402WorkRunArtifact(report))).toThrow(
+      "artifact payload.events must be an array"
+    );
+  });
+
+  test("reports harness artifact event-order failures", () => {
+    const artifact = harnessEventsRunArtifact([
+      {
+        type: "run_started",
+        eventId: "evt:1",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:00.000Z",
+        claimCount: 1
+      },
+      {
+        type: "run_finished",
+        eventId: "evt:2",
+        runId: "run:harness:test",
+        emittedAt: "2026-01-01T00:00:01.000Z",
+        claimCount: 1,
+        observationCount: 0,
+        asset: "OUSD",
+        payoutAtomic: "0"
+      }
+    ]);
+
+    expect(verifyRunArtifact(artifact)).toEqual({
+      ok: false,
+      errors: ["run_finished claimCount 1 does not match 0 claim_loaded events"]
+    });
   });
 });

@@ -4,6 +4,7 @@
   "description": "ZAP Witness Council CLI harness",
   "type": "module",
   "bin": {
+    "oleander": "./dist/cli.js",
     "zap": "./dist/cli.js"
   },
   "scripts": {
@@ -15,7 +16,8 @@
     "ci": "bun run typecheck && bun run browser:typecheck && bun test && bun run build && bun run browser:build",
     "dev": "bun run src/cli.ts",
     "harness": "bun run browser:build && bun run src/cli.ts harness serve",
-    "tui": "bun run src/cli.ts tui",
+    "ui": "bun run src/cli.ts",
+    "headless:run": "bun run src/cli.ts headless run --once",
     "start": "bun dist/cli.js",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"

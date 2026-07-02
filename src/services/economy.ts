@@ -21,7 +21,7 @@ export interface WorkReceipt {
 
 export interface StablecoinBountyReceipt {
   readonly workReceiptId: string;
-  readonly stablecoin: "USDC" | "USDT" | "DAI";
+  readonly stablecoin: "OUSD";
   readonly amountAtomic: string;
   readonly payoutAddress: string;
 }

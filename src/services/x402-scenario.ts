@@ -7,7 +7,7 @@ export interface X402RolePlan {
 
 export interface X402MockScenario {
   readonly protocol: "x402";
-  readonly paymentAsset: "USDC";
+  readonly paymentAsset: "OUSD";
   readonly utilityAsset: "ZAP";
   readonly network: string;
   readonly claimFeed: string;
@@ -23,7 +23,7 @@ export interface X402MockScenario {
 
 export const x402MockScenario: X402MockScenario = {
   protocol: "x402",
-  paymentAsset: "USDC",
+  paymentAsset: "OUSD",
   utilityAsset: "ZAP",
   network: "mock-base",
   claimFeed: "claims/x402-mock.json",
@@ -37,20 +37,20 @@ export const x402MockScenario: X402MockScenario = {
     {
       role: "Claim Sponsor",
       actor: "Stablecoin protocol, data buyer, or ZAP treasury",
-      fundsOrStakes: "Funds USDC bounty budget through x402 payment requirements",
+      fundsOrStakes: "Funds OUSD bounty budget through x402 payment requirements",
       receives: "Settled claim output and evidence receipts"
     },
     {
       role: "Witness Worker",
       actor: "Agentic ZAP client operator",
       fundsOrStakes: "Stakes ZAP or reputation bond to qualify for paid work",
-      receives: "USDC for accepted work, ZAP for quality and availability"
+      receives: "OUSD for accepted work, ZAP for quality and availability"
     },
     {
       role: "Disputer",
       actor: "Witness worker or specialist reviewer",
       fundsOrStakes: "Posts ZAP dispute bond",
-      receives: "USDC/ZAP reward when dispute is valid"
+      receives: "OUSD/ZAP reward when dispute is valid"
     },
     {
       role: "Council",
@@ -66,13 +66,13 @@ export const x402MockScenario: X402MockScenario = {
     }
   ],
   flow: [
-    "Claim sponsor publishes typed claims with x402 payment requirements and a USDC budget.",
+    "Claim sponsor publishes typed claims with x402 payment requirements and an OUSD budget.",
     "Witness workers stake ZAP or reputation to qualify for claim work.",
-    "Workers run scheduled OpenCLAW jobs against the claim feed.",
+    "Workers run scheduled DeepSeek tool-call witness jobs against the claim feed.",
     "Each worker collects evidence, validates typed response, signs observation, and gossips it.",
     "Oracle reducer proposes, disputes, or settles based on signed observations and liveness.",
     "Accepted work creates a work receipt.",
-    "x402 pays USDC from the claim budget to eligible workers.",
+    "x402 pays OUSD from the claim budget to eligible workers.",
     "Council policy mints/allocates ZAP rewards for quality, availability, amplification, and valid disputes.",
     "Protocol fees can route to burn and treasury according to policy."
   ]

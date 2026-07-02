@@ -19,12 +19,12 @@ Council governs incentives, not truth
 
 ```text
 Claim Sponsor
-  funds USDC bounty supply through x402 payment requirements
+  funds OUSD bounty supply through x402 payment requirements
   examples: stablecoin protocol, data buyer, treasury, risk desk
 
 Witness Worker
   stakes ZAP or reputation to qualify for claim work
-  earns USDC for accepted work receipts
+  earns OUSD for accepted work receipts
   earns ZAP for quality, uptime, amplification, valid disputes
 
 Disputer
@@ -73,7 +73,7 @@ witness-availability
   works paid endpoint availability claims and emits incentive receipts
 ```
 
-All worker services run in mock model mode. They still execute the real claim feed, evidence normalization, validation, signing, work receipt, USDC bounty receipt, and ZAP reward receipt path.
+All worker services run in mock model mode. They still execute the real claim feed, evidence normalization, validation, signing, work receipt, OUSD bounty receipt, and ZAP reward receipt path.
 
 The mock follows the Paybot-style compose story: facilitator service, protected resource service, client workers, and a shared Docker network. The mock `X-PAYMENT` header stands in for a real signed x402 payment payload until the real SDK/facilitator integration is added.
 

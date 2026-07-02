@@ -131,7 +131,7 @@ export const WitnessRoles: ReadonlyArray<WitnessRole> = [
   {
     id: "research",
     title: "Research Witness",
-    responsibility: "Evaluate evidence collection strategy through OpenCLAW."
+    responsibility: "Evaluate evidence collection strategy through DeepSeek tool-call witness."
   },
   {
     id: "gate",

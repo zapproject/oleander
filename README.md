@@ -32,9 +32,12 @@ bun run browser:build
 bun test
 bun run dev -- claims list
 bun run dev -- deepseek smoke
+bun run dev
+bun run dev -- --once
+bun run dev -- runs replay runs/run-a.json
+bun run dev -- headless run --once
 bun run dev -- harness serve
 bun run dev -- roles list
-bun run dev -- tui
 bun run dev -- x402 scenario
 bun run dev -- x402 work --once
 bun run dev -- x402 serve facilitator
@@ -44,6 +47,15 @@ bun run dev -- council --once
 bun run dev -- council --role law --once
 bun run dev -- run --once
 bun run dev -- run --daemon --ticks 1
+```
+
+Installable CLI target:
+
+```bash
+bun run build
+npm link
+oleander --once
+oleander runs replay runs/run-a.json
 ```
 
 Docker testbed:
@@ -64,13 +76,13 @@ x402 mock work scenario:
 ./scripts/test-x402-mock.sh
 ```
 
-TUI harness:
+Oleander UI:
 
 ```bash
-bun run tui
+bun run ui
 ```
 
-Press `1`-`6` to choose a regime, `r` to run the sponsor/oracle incentive scenario, `v` to toggle verbose raw output, `c` to clean up the Docker stack, and `q` to exit. The TUI defaults to the 50-claim feed and parses oracle output into claim counts, active claim IDs, oracle receipt totals, and USDC/ZAP incentive totals instead of showing raw JSON as the primary view.
+The default product surface is the Oleander UI. Use `oleander --once` for a one-shot cockpit render, `oleander runs replay <file>` to reopen a saved run in the cockpit, and `oleander headless run --once` when you need raw event JSON without the UI.
 
 Browser harness:
 
@@ -78,22 +90,22 @@ Browser harness:
 bun run harness
 ```
 
-Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, USDC bounty, ZAP reward, oracle settlement, and run settlement. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
+Open `http://localhost:5174`. The CLI serves the D3 harness and streams the same 50-claim x402 scenario through `/events` as typed lifecycle events: sponsor load, oracle start, signed observation, work receipt, OUSD bounty, ZAP reward, oracle settlement, and run settlement. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server
 returns `402 Payment Required` until a witness supplies the mock `X-PAYMENT`
 header; council clients then fetch the paid claim feed and process work.
 
-Run artifacts are written to `runs/` by default for `x402 work --once` and TUI scenario runs. Set `ZAP_RUN_ARTIFACT_DIR` to write them elsewhere.
+Run artifacts are written to `runs/` by default for `x402 work --once`, UI runs, and headless harness runs. The CLI prints the artifact path on stderr so stdout can remain either cockpit text or raw JSON. Set `ZAP_RUN_ARTIFACT_DIR` to write artifacts elsewhere. Use `oleander runs replay <file>` for cockpit replay and `oleander headless runs verify <file>` for non-UI validation.
 
 ## Architecture
 
 ```text
-zap CLI
+oleander CLI
   -> claim feed
   -> scheduled witness runtime
-  -> OpenCLAW evidence and model workflow
+  -> DeepSeek tool-call witness evidence and model workflow
   -> typed validator
   -> signer
   -> gossip evidence set
@@ -101,7 +113,7 @@ zap CLI
   -> work and reward receipts
 ```
 
-The important rule: gossip converges signed evidence, OpenCLAW gathers and critiques, the validator enforces typed boundaries, and the oracle reducer derives proposal/dispute/settlement state.
+The important rule: gossip converges signed evidence, DeepSeek tool-call witness gathers and critiques, the validator enforces typed boundaries, and the oracle reducer derives proposal/dispute/settlement state.
 
 ## Council Roles
 
@@ -112,7 +124,7 @@ Cut Witness       deterministic validation
 Signal Witness    gossip / CRDT readiness
 Forge Witness     runtime packaging
 Fault Witness     adversarial validation
-Research Witness  OpenCLAW evidence work
+Research Witness  DeepSeek tool-call witness evidence work
 Gate Witness      admission control
 ```
 
@@ -135,7 +147,7 @@ The current repo proves the local client harness:
 - Bun + Effect TS CLI
 - DeepSeek Pro council activity check
 - typed claim feed and validator
-- OpenCLAW observation runtime
+- DeepSeek tool-call witness observation runtime
 - normalized evidence adapters
 - deterministic dev signing
 - append-only gossip/CRDT-style message set

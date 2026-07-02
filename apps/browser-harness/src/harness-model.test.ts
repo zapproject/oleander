@@ -12,10 +12,10 @@ import {
 } from "./harness-model.js";
 
 const claim = (overrides: Partial<ClaimSpec>): ClaimSpec => ({
-  id: "claim:x402:50:usdc-peg-001",
+  id: "claim:x402:50:ousd-peg-001",
   kind: "yes_no",
   domain: "stablecoins",
-  statement: "USDC held its peg.",
+  statement: "OUSD held its peg.",
   sources: ["https://example.com"],
   livenessSeconds: 60,
   ...overrides
@@ -49,10 +49,10 @@ describe("browser harness model", () => {
     const stats = createOracleStats();
     stats["witness-peg"]!.claimIds.push("claim:a");
     stats["witness-peg"]!.observations = 1;
-    stats["witness-peg"]!.usdcAtomic = 1n;
+    stats["witness-peg"]!.ousdAtomic = 1n;
     stats["witness-peg"]!.zapAtomic = 1n;
     resetOracleStats(stats);
-    expect(stats["witness-peg"]).toMatchObject({ claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n });
+    expect(stats["witness-peg"]).toMatchObject({ claimIds: [], observations: 0, ousdAtomic: 0n, zapAtomic: 0n });
   });
 
   test("prepends bounded event items", () => {
@@ -68,7 +68,7 @@ describe("browser harness model", () => {
       type: "x402_oracle_work",
       sponsor: "sponsor:x402:mock",
       oracle: "witness-peg",
-      stablecoinBounty: { stablecoin: "USDC", amountAtomic: "1000000" }
+      stablecoinBounty: { stablecoin: "OUSD", amountAtomic: "1000000" }
     });
   });
 
@@ -76,12 +76,12 @@ describe("browser harness model", () => {
     expect(liveEventLabel({
       type: "bounty_created",
       runId: "run:test",
-      claimId: "claim:x402:50:usdc-peg-001",
+      claimId: "claim:x402:50:ousd-peg-001",
       nodeId: "witness-peg",
-      stablecoin: "USDC",
+      stablecoin: "OUSD",
       amountAtomic: "1000000",
       payoutAddress: "mock-wallet:witness-peg",
       emittedAt: "2026-01-01T00:00:00.000Z"
-    })).toBe("witness-peg earned 1000000 USDC atomic");
+    })).toBe("witness-peg earned 1000000 OUSD atomic");
   });
 });

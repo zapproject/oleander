@@ -17,7 +17,7 @@ export interface OracleStats {
   readonly nodeId: string;
   claimIds: string[];
   observations: number;
-  usdcAtomic: bigint;
+  ousdAtomic: bigint;
   zapAtomic: bigint;
 }
 
@@ -55,7 +55,7 @@ export type LiveHarnessEvent =
       readonly runId: string;
       readonly claimId: string;
       readonly nodeId: string;
-      readonly stablecoin: "USDC";
+      readonly stablecoin: "OUSD";
       readonly amountAtomic: string;
       readonly payoutAddress: string;
       readonly emittedAt: string;
@@ -94,16 +94,16 @@ export const regimes: Regime[] = [
 ];
 
 export const createOracleStats = (): Record<string, OracleStats> => ({
-  "witness-availability": { nodeId: "witness-availability", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
-  "witness-attestation": { nodeId: "witness-attestation", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n },
-  "witness-peg": { nodeId: "witness-peg", claimIds: [], observations: 0, usdcAtomic: 0n, zapAtomic: 0n }
+  "witness-availability": { nodeId: "witness-availability", claimIds: [], observations: 0, ousdAtomic: 0n, zapAtomic: 0n },
+  "witness-attestation": { nodeId: "witness-attestation", claimIds: [], observations: 0, ousdAtomic: 0n, zapAtomic: 0n },
+  "witness-peg": { nodeId: "witness-peg", claimIds: [], observations: 0, ousdAtomic: 0n, zapAtomic: 0n }
 });
 
 export const resetOracleStats = (stats: Record<string, OracleStats>) => {
   for (const stat of Object.values(stats)) {
     stat.claimIds = [];
     stat.observations = 0;
-    stat.usdcAtomic = 0n;
+    stat.ousdAtomic = 0n;
     stat.zapAtomic = 0n;
   }
 };
@@ -135,7 +135,7 @@ export const createVerboseReceipt = (claim: ClaimSpec, oracle: string) => ({
   claimId: claim.id,
   workReceipt: `work:${claim.id}:${oracle}`,
   stablecoinBounty: {
-    stablecoin: "USDC",
+    stablecoin: "OUSD",
     amountAtomic: bountyAtomic.toString(),
     payoutAddress: `mock-wallet:${oracle}`
   },

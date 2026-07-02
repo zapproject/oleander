@@ -1,10 +1,10 @@
 [
   {
-    "id": "claim:x402:50:usdc-peg-001",
+    "id": "claim:x402:50:ousd-peg-001",
     "kind": "yes_no",
     "domain": "stablecoins",
-    "statement": "USDC remained within the sponsor policy band during the mock x402 observation window.",
-    "sources": ["local-evidence://stablecoins/usdc-peg-001"],
+    "statement": "OUSD remained within the sponsor policy band during the mock x402 observation window.",
+    "sources": ["local-evidence://stablecoins/ousd-peg-001"],
     "livenessSeconds": 120
   },
   {
@@ -160,11 +160,11 @@
     "livenessSeconds": 120
   },
   {
-    "id": "claim:x402:50:circle-attestation-021",
+    "id": "claim:x402:50:openusd-attestation-021",
     "kind": "hash_attestation",
     "domain": "stablecoins",
-    "statement": "The Circle reserve attestation in the sponsor packet matches the expected mock document hash.",
-    "sources": ["local-evidence://stablecoins/circle-attestation-021"],
+    "statement": "The OpenUSD reserve attestation in the sponsor packet matches the expected mock document hash.",
+    "sources": ["local-evidence://stablecoins/openusd-attestation-021"],
     "livenessSeconds": 300
   },
   {
@@ -336,11 +336,11 @@
     "livenessSeconds": 60
   },
   {
-    "id": "claim:x402:50:openclaw-availability-043",
+    "id": "claim:x402:50:tool-call-witness-availability-043",
     "kind": "yes_no",
     "domain": "availability",
-    "statement": "The OpenCLAW evidence workflow completed observations for eligible claims during the mock run.",
-    "sources": ["local-evidence://availability/openclaw-043"],
+    "statement": "The DeepSeek tool-call witness evidence workflow completed observations for eligible claims during the mock run.",
+    "sources": ["local-evidence://availability/tool-call-witness-043"],
     "livenessSeconds": 60
   },
   {
@@ -363,7 +363,7 @@
     "id": "claim:x402:50:receipt-pipeline-availability-046",
     "kind": "yes_no",
     "domain": "availability",
-    "statement": "The incentive receipt pipeline produced work, USDC bounty, and ZAP reward receipts.",
+    "statement": "The incentive receipt pipeline produced work, OUSD bounty, and ZAP reward receipts.",
     "sources": ["local-evidence://availability/receipt-pipeline-046"],
     "livenessSeconds": 60
   },
@@ -387,7 +387,7 @@
     "id": "claim:x402:50:report-parser-availability-049",
     "kind": "yes_no",
     "domain": "availability",
-    "statement": "The TUI report parser summarized oracle receipts without exposing raw JSON as the primary view.",
+    "statement": "The UI report parser summarized oracle receipts without exposing raw JSON as the primary view.",
     "sources": ["local-evidence://availability/report-parser-049"],
     "livenessSeconds": 60
   },

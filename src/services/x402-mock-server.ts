@@ -36,14 +36,14 @@ export const serveX402FacilitatorMock = (port: number) => {
           payment: body.payment,
           txHash: `0x${"a".repeat(64)}`,
           network: "mock-base",
-          asset: "USDC"
+          asset: "OUSD"
         });
       }
       if (url.pathname === "/payments/create") {
         return json({
           payment: "mock-paid",
           amountAtomic: "1000000",
-          asset: "USDC",
+          asset: "OUSD",
           network: "mock-base",
           expiresInSeconds: 300
         });
@@ -72,7 +72,7 @@ export const serveX402ResourceMock = (options: X402ServerOptions) => {
                 {
                   scheme: "exact",
                   network: "mock-base",
-                  asset: "USDC",
+                  asset: "OUSD",
                   amountAtomic: "1000000",
                   payTo: "zap-claim-sponsor",
                   resource: "/claims"

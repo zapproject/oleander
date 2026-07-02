@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { StepState } from "./tui-harness-core.js";
+import type { StepState } from "./ui-scenario-core.js";
 
 export interface HarnessProcessHandlers {
   readonly onStart?: () => void;

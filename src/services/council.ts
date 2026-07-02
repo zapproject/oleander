@@ -3,7 +3,7 @@ import { WitnessRoles, type CouncilHelloTurn, type Observation, type WitnessRole
 import { ClaimFeed } from "./claim-feed.js";
 import { ConfigService } from "./config.js";
 import { DeepSeek } from "./deepseek.js";
-import { OpenClaw } from "./openclaw.js";
+import { ToolCallWitness } from "./tool-call-witness.js";
 
 export interface CouncilService {
   readonly hello: Effect.Effect<ReadonlyArray<CouncilHelloTurn>, Error>;
@@ -23,7 +23,7 @@ export const CouncilLive = Layer.effect(
     const config = yield* ConfigService;
     const feed = yield* ClaimFeed;
     const deepseek = yield* DeepSeek;
-    const openclaw = yield* OpenClaw;
+    const toolCallWitness = yield* ToolCallWitness;
 
     const claimsForPolicy = feed.list.pipe(
       Effect.map((claims) =>
@@ -72,7 +72,7 @@ export const CouncilLive = Layer.effect(
         const observations: Observation[] = [];
         for (const claim of claims) {
           for (const role of WitnessRoles) {
-            observations.push(yield* openclaw.observe(role, claim));
+            observations.push(yield* toolCallWitness.observe(role, claim));
           }
         }
         return observations;
@@ -86,7 +86,7 @@ export const CouncilLive = Layer.effect(
           const claims = yield* claimsForPolicy;
           const observations: Observation[] = [];
           for (const claim of claims) {
-            observations.push(yield* openclaw.observe(role, claim));
+            observations.push(yield* toolCallWitness.observe(role, claim));
           }
           return observations;
         }),
@@ -96,7 +96,7 @@ export const CouncilLive = Layer.effect(
         const role = WitnessRoles.find((item) => item.id === "research") ?? WitnessRoles[0]!;
         const observations: Observation[] = [];
         for (const claim of claims) {
-          observations.push(yield* openclaw.observe(role, claim));
+          observations.push(yield* toolCallWitness.observe(role, claim));
         }
         return observations;
       })

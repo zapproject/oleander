@@ -2,8 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { parseCliArgs } from "./cli-parser.js";
 
 describe("parseCliArgs", () => {
+  test("opens the UI by default", () => {
+    expect(parseCliArgs([])).toEqual({ type: "ui", once: false });
+    expect(parseCliArgs(["--once"])).toEqual({ type: "ui", once: true });
+  });
+
   test("parses help aliases", () => {
-    expect(parseCliArgs([])).toEqual({ type: "help" });
     expect(parseCliArgs(["help"])).toEqual({ type: "help" });
     expect(parseCliArgs(["--help"])).toEqual({ type: "help" });
   });
@@ -12,6 +16,28 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(["council", "--role", "law", "--once"])).toEqual({
       type: "councilOnce",
       roleId: "law"
+    });
+  });
+
+  test("parses headless one-shot runs", () => {
+    expect(parseCliArgs(["headless", "run", "--once"])).toEqual({ type: "headlessRunOnce" });
+  });
+
+  test("rejects deprecated terminal UI command names", () => {
+    expect(() => parseCliArgs(["t" + "ui"])).toThrow("Unknown command");
+  });
+
+  test("parses run artifact verification", () => {
+    expect(parseCliArgs(["headless", "runs", "verify", "runs/run-a.json"])).toEqual({
+      type: "runsVerify",
+      filePath: "runs/run-a.json"
+    });
+  });
+
+  test("parses run artifact replay as a UI command", () => {
+    expect(parseCliArgs(["runs", "replay", "runs/run-a.json"])).toEqual({
+      type: "runsReplay",
+      filePath: "runs/run-a.json"
     });
   });
 

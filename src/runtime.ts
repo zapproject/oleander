@@ -5,7 +5,7 @@ import { CouncilLive } from "./services/council.js";
 import { DeepSeekLive } from "./services/deepseek.js";
 import { EvidenceLive } from "./services/evidence.js";
 import { GossipLive } from "./services/gossip.js";
-import { OpenClawLive } from "./services/openclaw.js";
+import { DeepSeekToolCallWitnessLive } from "./services/tool-call-witness.js";
 import { SchedulerLive } from "./services/scheduler.js";
 import { SignerLive } from "./services/signer.js";
 import { ValidatorLive } from "./services/validator.js";
@@ -14,14 +14,14 @@ const ClaimFeedProvided = ClaimFeedLive.pipe(Layer.provide(ConfigLive));
 const DeepSeekProvided = DeepSeekLive.pipe(Layer.provide(ConfigLive));
 const SignerProvided = SignerLive.pipe(Layer.provide(ConfigLive));
 
-const OpenClawProvided = OpenClawLive.pipe(
+const ToolCallWitnessProvided = DeepSeekToolCallWitnessLive.pipe(
   Layer.provide(
     Layer.mergeAll(
-            ConfigLive,
-            ValidatorLive,
-            DeepSeekProvided,
-            EvidenceLive,
-            SignerProvided
+      ConfigLive,
+      ValidatorLive,
+      DeepSeekProvided,
+      EvidenceLive,
+      SignerProvided
     )
   )
 );
@@ -32,11 +32,18 @@ const CouncilProvided = CouncilLive.pipe(
       ConfigLive,
       ClaimFeedProvided,
       DeepSeekProvided,
-      OpenClawProvided
+      ToolCallWitnessProvided
     )
   )
 );
 
 const SchedulerProvided = SchedulerLive.pipe(Layer.provide(ConfigLive));
 
-export const AppLayer = Layer.mergeAll(ClaimFeedProvided, DeepSeekProvided, CouncilProvided, SchedulerProvided, GossipLive);
+export const AppLayer = Layer.mergeAll(
+  ClaimFeedProvided,
+  DeepSeekProvided,
+  ToolCallWitnessProvided,
+  CouncilProvided,
+  SchedulerProvided,
+  GossipLive
+);

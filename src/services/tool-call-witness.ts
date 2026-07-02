@@ -6,14 +6,14 @@ import { Evidence } from "./evidence.js";
 import { Signer } from "./signer.js";
 import { Validator } from "./validator.js";
 
-export interface OpenClawService {
+export interface ToolCallWitnessService {
   readonly plan: (role: WitnessRole, claim: ClaimSpec) => Effect.Effect<EvidencePlan, Error>;
   readonly observe: (role: WitnessRole, claim: ClaimSpec) => Effect.Effect<Observation, Error>;
 }
 
-export class OpenClaw extends Context.Tag("OpenClaw")<
-  OpenClaw,
-  OpenClawService
+export class ToolCallWitness extends Context.Tag("ToolCallWitness")<
+  ToolCallWitness,
+  ToolCallWitnessService
 >() {}
 
 const fallbackResponse = (claim: ClaimSpec): ClaimResponse => {
@@ -86,8 +86,8 @@ const confidenceFor = (response: ClaimResponse): number => {
   return 0.5;
 };
 
-export const OpenClawLive = Layer.effect(
-  OpenClaw,
+export const DeepSeekToolCallWitnessLive = Layer.effect(
+  ToolCallWitness,
   Effect.gen(function* () {
     const config = yield* ConfigService;
     const deepseek = yield* DeepSeek;
@@ -104,8 +104,8 @@ export const OpenClawLive = Layer.effect(
             roleId: role.id,
             steps: [
               `Apply ${role.title} policy to ${claim.kind} claim`,
-              "Inspect claim-provided sources",
-              "Ask model for constrained assessment",
+              "Inspect claim-provided sources as tool-call inputs",
+              "Ask DeepSeek tool-call model for constrained assessment",
               "Validate response before signing observation"
             ]
           };
@@ -123,6 +123,7 @@ export const OpenClawLive = Layer.effect(
                 "You are a ZAP Witness Council agent.",
                 `Role: ${role.title}.`,
                 `Responsibility: ${role.responsibility}.`,
+                "Use DeepSeek as the constrained tool-call model for witness assessment.",
                 "Return either concise rationale or a JSON ClaimResponse object.",
                 "Prefer no_answer_possible unless the claim can be evaluated from provided sources alone.",
                 "Valid JSON response examples:",

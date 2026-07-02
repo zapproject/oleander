@@ -14,7 +14,7 @@ export interface X402WorkReport {
   readonly type: "x402_oracle_work";
   readonly sponsor: {
     readonly id: string;
-    readonly paymentAsset: "USDC";
+    readonly paymentAsset: "OUSD";
     readonly bountyPerObservationAtomic: string;
     readonly zapRewardPerObservationAtomic: string;
   };
@@ -55,7 +55,7 @@ export const x402WorkReportFromObservations = (
       sponsor: sponsorId,
       workReceipt,
       stablecoinBounty: stablecoinBountyFromWork(workReceipt, {
-        stablecoin: "USDC",
+        stablecoin: "OUSD",
         amountAtomic: bountyPerObservationAtomic,
         payoutAddress: `mock-wallet:${observation.nodeId}`
       }),
@@ -67,7 +67,7 @@ export const x402WorkReportFromObservations = (
     type: "x402_oracle_work",
     sponsor: {
       id: sponsorId,
-      paymentAsset: "USDC",
+      paymentAsset: "OUSD",
       bountyPerObservationAtomic,
       zapRewardPerObservationAtomic
     },

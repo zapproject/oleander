@@ -2,8 +2,9 @@ import { WitnessRoles, type WitnessRoleId } from "./domain.js";
 
 export type CliCommand =
   | { readonly type: "help" }
-  | { readonly type: "tui"; readonly autoRun: boolean; readonly verbose: boolean }
+  | { readonly type: "ui"; readonly once: boolean }
   | { readonly type: "harnessServe" }
+  | { readonly type: "headlessRunOnce" }
   | { readonly type: "claimsList" }
   | { readonly type: "rolesList" }
   | { readonly type: "x402Scenario" }
@@ -14,7 +15,9 @@ export type CliCommand =
   | { readonly type: "councilHello" }
   | { readonly type: "councilOnce"; readonly roleId: WitnessRoleId | undefined }
   | { readonly type: "runOnce" }
-  | { readonly type: "runDaemon"; readonly ticks: number | undefined };
+  | { readonly type: "runDaemon"; readonly ticks: number | undefined }
+  | { readonly type: "runsReplay"; readonly filePath: string }
+  | { readonly type: "runsVerify"; readonly filePath: string };
 
 const hasFlag = (args: ReadonlyArray<string>, name: string): boolean => args.includes(name);
 
@@ -38,6 +41,12 @@ const readPositiveIntFlag = (args: ReadonlyArray<string>, name: string): number 
   return parsed;
 };
 
+const readPositional = (args: ReadonlyArray<string>, index: number, label: string): string => {
+  const value = args[index];
+  if (!value || value.startsWith("--")) throw new Error(`Missing ${label}`);
+  return value;
+};
+
 const isWitnessRoleId = (value: string): value is WitnessRoleId =>
   WitnessRoles.some((role) => role.id === value);
 
@@ -49,15 +58,16 @@ export const parseCliArgs = (args: ReadonlyArray<string>): CliCommand => {
   const command = args[0];
   const subcommand = args[1];
 
-  if (!command || command === "help" || command === "--help" || command === "-h") {
+  if (!command || command === "--once") {
+    return { type: "ui", once: hasFlag(args, "--once") };
+  }
+
+  if (command === "help" || command === "--help" || command === "-h") {
     return { type: "help" };
   }
 
-  if (command === "tui") {
-    return { type: "tui", autoRun: hasFlag(args, "--run"), verbose: hasFlag(args, "--verbose") };
-  }
-
   if (command === "harness" && subcommand === "serve") return { type: "harnessServe" };
+  if (command === "headless" && subcommand === "run" && hasFlag(args, "--once")) return { type: "headlessRunOnce" };
   if (command === "claims" && subcommand === "list") return { type: "claimsList" };
   if (command === "roles" && subcommand === "list") return { type: "rolesList" };
   if (command === "x402" && subcommand === "scenario") return { type: "x402Scenario" };
@@ -85,6 +95,14 @@ export const parseCliArgs = (args: ReadonlyArray<string>): CliCommand => {
 
   if (command === "run" && hasFlag(args, "--daemon")) {
     return { type: "runDaemon", ticks: readPositiveIntFlag(args, "--ticks") };
+  }
+
+  if (command === "runs" && subcommand === "replay") {
+    return { type: "runsReplay", filePath: readPositional(args, 2, "run artifact file") };
+  }
+
+  if (command === "headless" && subcommand === "runs" && args[2] === "verify") {
+    return { type: "runsVerify", filePath: readPositional(args, 3, "run artifact file") };
   }
 
   return unknown(args);

@@ -6,7 +6,7 @@ const validClaim: ClaimSpec = {
   id: "claim:test:001",
   kind: "yes_no",
   domain: "stablecoins",
-  statement: "USDC stayed inside the configured peg tolerance.",
+  statement: "OUSD stayed inside the configured peg tolerance.",
   sources: ["https://example.com/price"],
   livenessSeconds: 60
 };

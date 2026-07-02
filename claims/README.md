@@ -11,7 +11,7 @@ Typed claim feeds for the witness harness.
 
 ## Current Demo Claims
 
-- `claim:stablecoin:usdc-demo-001`
+- `claim:stablecoin:ousd-demo-001`
   - kind: `yes_no`
   - purpose: peg-status workflow
 

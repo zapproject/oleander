@@ -1,22 +1,22 @@
 [
   {
-    "id": "claim:x402:usdc-peg-window-001",
+    "id": "claim:x402:ousd-peg-window-001",
     "kind": "yes_no",
     "domain": "stablecoins",
-    "statement": "USDC stayed within 1% of 1 USD during the x402 mock observation window.",
+    "statement": "OUSD stayed within 1% of 1 USD during the x402 mock observation window.",
     "sources": [
-      "https://www.coinbase.com/price/usd-coin",
-      "https://www.coingecko.com/en/coins/usd-coin"
+      "local-evidence://stablecoins/ousd-peg-window-001",
+      "local-evidence://stablecoins/openusd-policy-band-001"
     ],
     "livenessSeconds": 120
   },
   {
-    "id": "claim:x402:circle-attestation-hash-001",
+    "id": "claim:x402:openusd-attestation-hash-001",
     "kind": "hash_attestation",
     "domain": "stablecoins",
-    "statement": "The Circle reserve attestation referenced by the x402 mock claim matches its expected document hash.",
+    "statement": "The OpenUSD reserve attestation referenced by the x402 mock claim matches its expected document hash.",
     "sources": [
-      "https://www.circle.com/transparency"
+      "local-evidence://stablecoins/openusd-attestation-hash-001"
     ],
     "livenessSeconds": 300
   },
