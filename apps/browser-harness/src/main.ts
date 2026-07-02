@@ -66,6 +66,9 @@ let liveStreamStarted = false;
 let autoRunIntervalMs = 180_000;
 let autoRunTimer: number | undefined;
 let nextRunAt = 0;
+let claimsPanelVisible = true;
+let opsPanelVisible = true;
+let opsAuthEnabled = false;
 type LiveEndpoint = "/engine-events" | "/events";
 
 const oracleStats: Record<string, OracleStats> = createOracleStats();
@@ -81,6 +84,8 @@ const el = <T extends HTMLElement>(id: string): T => {
 };
 
 const svg = d3.select<SVGSVGElement, unknown>("#network-graph");
+const workspace = document.querySelector<HTMLElement>(".workspace");
+if (!workspace) throw new Error("Missing workspace");
 const graphShell = document.querySelector<HTMLElement>(".graph-shell");
 if (!graphShell) throw new Error("Missing graph shell");
 
@@ -245,6 +250,23 @@ simulation.on("tick", () => {
 });
 
 window.addEventListener("resize", resizeGraph);
+
+const applyPanelVisibility = () => {
+  workspace.classList.toggle("claims-hidden", !claimsPanelVisible);
+  workspace.classList.toggle("ops-hidden", !opsPanelVisible);
+  el("claims-toggle-button").setAttribute("aria-pressed", String(claimsPanelVisible));
+  el("ops-toggle-button").setAttribute("aria-pressed", String(opsPanelVisible));
+  el("claims-toggle-button").classList.toggle("active", claimsPanelVisible);
+  el("ops-toggle-button").classList.toggle("active", opsPanelVisible);
+  el("graph-view-button").classList.toggle("active", !claimsPanelVisible && !opsPanelVisible);
+  window.setTimeout(resizeGraph, 0);
+};
+
+const setGraphFocus = () => {
+  claimsPanelVisible = false;
+  opsPanelVisible = false;
+  applyPanelVisibility();
+};
 
 const resetRun = () => {
   running = false;
@@ -527,14 +549,21 @@ const renderMetrics = () => {
   el("metric-regime").textContent = activeRegime.label;
   if (running) {
     el("metric-next-run").textContent = "running";
+    el("bottom-next-run").textContent = "running";
   } else if (nextRunAt > 0) {
     const remainingSeconds = Math.max(0, Math.ceil((nextRunAt - Date.now()) / 1000));
     const minutes = Math.floor(remainingSeconds / 60);
     const seconds = remainingSeconds % 60;
-    el("metric-next-run").textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
+    const nextRunLabel = `${minutes}:${String(seconds).padStart(2, "0")}`;
+    el("metric-next-run").textContent = nextRunLabel;
+    el("bottom-next-run").textContent = nextRunLabel;
   } else {
     el("metric-next-run").textContent = "--";
+    el("bottom-next-run").textContent = "--";
   }
+  el("bottom-run-state").textContent = running ? "running" : "idle";
+  el("bottom-progress").textContent = `${totalObserved} / ${activeClaims.length}`;
+  el("bottom-ousd").textContent = `${totalOusd.toString()} OUSD`;
 };
 
 const renderRegimes = () => {
@@ -643,6 +672,8 @@ const renderVerbose = () => {
   panel.hidden = !verbose;
   el("verbose-button").setAttribute("aria-pressed", String(verbose));
   el("verbose-button").classList.toggle("active", verbose);
+  el("bottom-verbose-button").setAttribute("aria-pressed", String(verbose));
+  el("bottom-verbose-button").classList.toggle("active", verbose);
   el("verbose-output").textContent = verboseLines.join("\n\n");
 };
 
@@ -676,6 +707,7 @@ const renderAll = () => {
   renderEvents();
   renderVerbose();
   renderGraphState();
+  applyPanelVisibility();
 };
 
 el("run-button").addEventListener("click", run);
@@ -683,6 +715,19 @@ el("pause-button").addEventListener("click", pause);
 el("reset-button").addEventListener("click", resetRun);
 el("verbose-button").addEventListener("click", () => {
   verbose = !verbose;
+  renderAll();
+});
+el("bottom-verbose-button").addEventListener("click", () => {
+  verbose = !verbose;
+  renderAll();
+});
+el("graph-view-button").addEventListener("click", setGraphFocus);
+el("claims-toggle-button").addEventListener("click", () => {
+  claimsPanelVisible = !claimsPanelVisible;
+  renderAll();
+});
+el("ops-toggle-button").addEventListener("click", () => {
+  opsPanelVisible = !opsPanelVisible;
   renderAll();
 });
 
@@ -694,10 +739,12 @@ const loadHarnessConfig = async () => {
       if (Number.isFinite(config.autoRunIntervalMs) && config.autoRunIntervalMs > 0) {
         autoRunIntervalMs = config.autoRunIntervalMs;
       }
+      opsAuthEnabled = Boolean(config.opsAuthEnabled);
     }
   } catch {
     // Vite dev mode has no harness config endpoint.
   }
+  el<HTMLAnchorElement>("logout-link").hidden = !opsAuthEnabled;
   scheduleNextRun(1_000);
 };
 

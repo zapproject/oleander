@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { extname, join, resolve, sep } from "node:path";
 import type { ClaimSpec, Observation } from "../domain.js";
 import { WitnessRoles } from "../domain.js";
@@ -16,6 +17,16 @@ export interface HarnessRunOptions {
   readonly port?: number;
   readonly eventDelayMs?: number;
   readonly autoRunIntervalMs?: number;
+  readonly opsPassword?: string;
+  readonly opsSessionSecret?: string;
+  readonly opsLoginDisabled?: boolean;
+}
+
+export interface HarnessOpsAuth {
+  readonly password: string;
+  readonly sessionSecret: string;
+  readonly sessionToken: string;
+  readonly generatedPassword: boolean;
 }
 
 export type HarnessEvent =
@@ -98,9 +109,108 @@ const bountyPerObservationAtomic = "1000000";
 const zapPerObservationAtomic = "1000000000000000000";
 const oracleNodeIds = ["witness-availability", "witness-attestation", "witness-peg"] as const;
 const browserHarnessSponsorId = "sponsor:browser-harness";
+const opsSessionCookieName = "oleander_ops_session";
 
 const now = () => new Date().toISOString();
 const sleep = (ms: number) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+
+const safeEqual = (left: string, right: string): boolean => {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+};
+
+const opsSessionToken = (password: string, sessionSecret: string): string =>
+  createHmac("sha256", sessionSecret).update(password).digest("base64url");
+
+export const createHarnessOpsAuth = (options: Pick<HarnessRunOptions, "opsPassword" | "opsSessionSecret" | "opsLoginDisabled">): HarnessOpsAuth | undefined => {
+  if (options.opsLoginDisabled) return undefined;
+  const configuredPassword = options.opsPassword?.trim();
+  const password = configuredPassword && configuredPassword.length > 0 ? configuredPassword : randomBytes(12).toString("base64url");
+  const sessionSecret = options.opsSessionSecret?.trim() || randomBytes(32).toString("base64url");
+  return {
+    password,
+    sessionSecret,
+    sessionToken: opsSessionToken(password, sessionSecret),
+    generatedPassword: !configuredPassword
+  };
+};
+
+const parseCookies = (cookieHeader: string | null): Record<string, string> => {
+  const cookies: Record<string, string> = {};
+  if (!cookieHeader) return cookies;
+  for (const part of cookieHeader.split(";")) {
+    const [rawName, ...rawValue] = part.trim().split("=");
+    if (!rawName || rawValue.length === 0) continue;
+    cookies[rawName] = decodeURIComponent(rawValue.join("="));
+  }
+  return cookies;
+};
+
+export const isHarnessOpsRequestAuthenticated = (request: Request, auth: HarnessOpsAuth | undefined): boolean => {
+  if (!auth) return true;
+  const token = parseCookies(request.headers.get("cookie"))[opsSessionCookieName];
+  return typeof token === "string" && safeEqual(token, auth.sessionToken);
+};
+
+const opsLoginPage = (failed = false): Response => new Response(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oleander Ops Login</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101211; color: #edf2ea; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #101211; }
+      main { width: min(360px, calc(100vw - 24px)); border: 1px solid #333b34; border-radius: 8px; background: #171b19; padding: 18px; }
+      h1 { margin: 0 0 6px; font-size: 18px; letter-spacing: 0; }
+      p { margin: 0 0 14px; color: #9ba99d; font-size: 12px; line-height: 1.4; }
+      label { display: grid; gap: 6px; color: #9ba99d; font-size: 11px; }
+      input { height: 36px; border: 1px solid #333b34; border-radius: 6px; background: #101211; color: #edf2ea; padding: 0 10px; font: inherit; }
+      button { width: 100%; height: 34px; margin-top: 12px; border: 1px solid #71d4a4; border-radius: 6px; background: #213229; color: #edf2ea; font: inherit; cursor: pointer; }
+      .error { color: #f05d5e; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Oleander Ops</h1>
+      <p>Sign in to open the dashboard.</p>
+      ${failed ? `<p class="error">Login failed.</p>` : ""}
+      <form method="post" action="/login">
+        <label>Ops password<input name="password" type="password" autocomplete="current-password" autofocus /></label>
+        <button type="submit">Login</button>
+      </form>
+    </main>
+  </body>
+</html>`, {
+  status: failed ? 401 : 200,
+  headers: { "content-type": "text/html; charset=utf-8" }
+});
+
+const redirectResponse = (location: string, headers: HeadersInit = {}): Response =>
+  new Response(null, { status: 303, headers: { location, ...headers } });
+
+const loginRequiredResponse = (request: Request): Response => {
+  const acceptsHtml = request.headers.get("accept")?.includes("text/html") ?? false;
+  if (request.method === "GET" && acceptsHtml) return redirectResponse("/login");
+  return new Response("Login required\n", { status: 401 });
+};
+
+const handleOpsLogin = async (request: Request, auth: HarnessOpsAuth): Promise<Response> => {
+  if (request.method === "GET") return opsLoginPage();
+  if (request.method !== "POST") return new Response("Method not allowed\n", { status: 405 });
+  const form = await request.formData();
+  const password = String(form.get("password") ?? "");
+  if (!safeEqual(password, auth.password)) return opsLoginPage(true);
+  return redirectResponse("/", {
+    "set-cookie": `${opsSessionCookieName}=${encodeURIComponent(auth.sessionToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`
+  });
+};
+
+const logoutResponse = (): Response => redirectResponse("/login", {
+  "set-cookie": `${opsSessionCookieName}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`
+});
 
 export const isHarnessRegimeId = (value: string): value is HarnessRegimeId =>
   ["full", "sponsor", "availability", "attestation", "peg", "stablecoins"].includes(value);
@@ -358,16 +468,33 @@ export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
   const eventDelayMs = options.eventDelayMs ?? 75;
   const autoRunIntervalMs = options.autoRunIntervalMs ?? 180_000;
   const distRoot = resolve(process.cwd(), options.appDistPath ?? "apps/browser-harness/dist");
+  const opsAuth = createHarnessOpsAuth(options);
 
   const server = Bun.serve({
     port,
     async fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/health") {
-        return Response.json({ ok: true, service: "zap-harness", claimFeedPath, eventDelayMs, autoRunIntervalMs });
+        return Response.json({
+          ok: true,
+          service: "zap-harness",
+          claimFeedPath,
+          eventDelayMs,
+          autoRunIntervalMs,
+          opsAuthEnabled: Boolean(opsAuth)
+        });
+      }
+      if (opsAuth && url.pathname === "/login") {
+        return handleOpsLogin(request, opsAuth);
+      }
+      if (opsAuth && url.pathname === "/logout") {
+        return logoutResponse();
+      }
+      if (!isHarnessOpsRequestAuthenticated(request, opsAuth)) {
+        return loginRequiredResponse(request);
       }
       if (url.pathname === "/config") {
-        return Response.json({ autoRunIntervalMs, eventDelayMs, claimFeedPath });
+        return Response.json({ autoRunIntervalMs, eventDelayMs, claimFeedPath, opsAuthEnabled: Boolean(opsAuth) });
       }
       if (url.pathname === "/events") {
         return eventStreamResponse(request, { claimFeedPath, eventDelayMs });
@@ -380,6 +507,13 @@ export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
   });
 
   process.stdout.write(`ZAP browser harness: http://${server.hostname}:${server.port}\n`);
+  if (opsAuth?.generatedPassword) {
+    process.stdout.write(`Ops login password: ${opsAuth.password}\n`);
+  } else if (opsAuth) {
+    process.stdout.write("Ops login: enabled\n");
+  } else {
+    process.stdout.write("Ops login: disabled\n");
+  }
   process.stdout.write(`SSE stream: http://${server.hostname}:${server.port}/events?regime=full\n`);
   process.stdout.write(`Engine SSE stream: http://${server.hostname}:${server.port}/engine-events?regime=full\n`);
   return server;

@@ -66,6 +66,8 @@ Environment:
   ZAP_WITNESS_DOMAIN     Optional domain filter, e.g. stablecoins
   OUSD_SPONSOR_ID        Sponsor account label, defaults to sponsor:local
   OUSD_RUN_BUDGET_ATOMIC Optional OUSD run budget in atomic units
+  OLEANDER_OPS_PASSWORD  Ops dashboard password; generated at serve time if unset
+  OLEANDER_OPS_AUTH=0    Disable local ops login gate
 `);
 });
 
@@ -117,7 +119,10 @@ const program: Effect.Effect<void, Error, ClaimFeed | Council | DeepSeek | Sched
           port: Number(process.env.ZAP_HARNESS_PORT ?? 5174),
           claimFeedPath: process.env.ZAP_SPONSORED_CLAIM_FEED ?? "claims/x402-fifty-claims.json",
           eventDelayMs: Number(process.env.ZAP_HARNESS_EVENT_DELAY_MS ?? 75),
-          autoRunIntervalMs: Number(process.env.ZAP_HARNESS_AUTO_RUN_MS ?? 180_000)
+          autoRunIntervalMs: Number(process.env.ZAP_HARNESS_AUTO_RUN_MS ?? 180_000),
+          opsPassword: process.env.OLEANDER_OPS_PASSWORD,
+          opsSessionSecret: process.env.OLEANDER_OPS_SESSION_SECRET,
+          opsLoginDisabled: process.env.OLEANDER_OPS_AUTH === "0"
         })
       ).pipe(Effect.zipRight(Effect.never));
     }

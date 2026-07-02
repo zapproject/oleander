@@ -120,6 +120,22 @@
         </div>
         <pre id="verbose-output"></pre>
       </section>
+
+      <nav class="bottom-bar" aria-label="Dashboard controls">
+        <div class="bottom-status" aria-label="Run status">
+          <span id="bottom-run-state">idle</span>
+          <span id="bottom-progress">0 / 50</span>
+          <span id="bottom-ousd">0 OUSD</span>
+          <span id="bottom-next-run">--</span>
+        </div>
+        <div class="bottom-actions">
+          <button id="graph-view-button" type="button">Graph</button>
+          <button id="claims-toggle-button" type="button" aria-pressed="true">Claims</button>
+          <button id="ops-toggle-button" type="button" aria-pressed="true">Ops</button>
+          <button id="bottom-verbose-button" type="button" aria-pressed="false">Verbose</button>
+          <a id="logout-link" class="bottom-link" href="/logout" hidden>Logout</a>
+        </div>
+      </nav>
     </main>
   </body>
 </html>

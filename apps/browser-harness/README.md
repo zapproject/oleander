@@ -14,11 +14,17 @@ The stream is the same shared harness event spine used by headless runs, saved
 artifacts, replay, and OUSD budget accounting. The browser auto-scans every 3
 minutes; set `ZAP_HARNESS_AUTO_RUN_MS` to change the cadence.
 
+The server prints an ops password when it starts. Open the URL, log in, then use
+the bottom app bar to focus the graph or show/hide Claims, Ops, and Verbose
+panels. Set `OLEANDER_OPS_PASSWORD` for a stable password, or
+`OLEANDER_OPS_AUTH=0` to disable the local login gate.
+
 ```mermaid
 flowchart LR
   command["bun run harness"] --> build["vite build apps/browser-harness"]
   build --> server["oleander harness serve"]
-  server --> browser["http://localhost:5174"]
+  server --> login["ops login"]
+  login --> browser["http://localhost:5174"]
   browser --> engine["/engine-events?regime=selected"]
   engine --> model["browser event model"]
   model --> graph["D3 network graph"]

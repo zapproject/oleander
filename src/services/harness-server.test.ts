@@ -4,6 +4,8 @@ import {
   buildHarnessEvents,
   collectEngineHarnessEventsForRegime,
   claimsForHarnessRegime,
+  createHarnessOpsAuth,
+  isHarnessOpsRequestAuthenticated,
   oracleForHarnessClaim,
   streamEngineHarnessEventsForRegime
 } from "./harness-server.js";
@@ -123,5 +125,17 @@ describe("browser harness server", () => {
       observationCount: 3,
       payoutAtomic: "3000000"
     });
+  });
+
+  test("requires an ops session cookie when auth is enabled", () => {
+    const auth = createHarnessOpsAuth({ opsPassword: "secret", opsSessionSecret: "test-secret" });
+    if (!auth) throw new Error("expected auth config");
+    expect(auth.generatedPassword).toBe(false);
+    expect(isHarnessOpsRequestAuthenticated(new Request("http://localhost/"), auth)).toBe(false);
+    expect(isHarnessOpsRequestAuthenticated(new Request("http://localhost/", {
+      headers: { cookie: `oleander_ops_session=${auth.sessionToken}` }
+    }), auth)).toBe(true);
+    expect(isHarnessOpsRequestAuthenticated(new Request("http://localhost/"), undefined)).toBe(true);
+    expect(createHarnessOpsAuth({ opsLoginDisabled: true })).toBeUndefined();
   });
 });

@@ -34,6 +34,7 @@ export interface Regime {
 
 export interface HarnessConfig {
   readonly autoRunIntervalMs: number;
+  readonly opsAuthEnabled?: boolean;
 }
 
 export interface OusdBalanceAccount {

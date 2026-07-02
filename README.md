@@ -27,7 +27,7 @@ bun install
 bun run harness
 ```
 
-Open `http://localhost:5174`. The app builds first, then serves the browser cockpit and streams engine events into it.
+The server prints the local ops password. Open `http://localhost:5174`, log in, then use the bottom app bar to focus the graph or show/hide Claims, Ops, and Verbose panels.
 
 Install and run the `oleander` command:
 
@@ -80,11 +80,12 @@ flowchart TD
   install -->|streaming automation| stream["oleander headless stream --once"]
 
   harness --> serve["Build browser app and serve http://localhost:5174"]
+  serve --> login["Ops login"]
   oleander --> cockpit["Render Oleander cockpit"]
   headless --> json["Print raw JSON and write run artifact"]
   stream --> ndjson["Print NDJSON events as the run progresses"]
 
-  serve --> browser["Browser cockpit"]
+  login --> browser["Browser cockpit"]
   cockpit --> artifact["Run artifact in runs/"]
   json --> artifact
   ndjson --> artifact
@@ -101,6 +102,8 @@ bun run harness
 ```
 
 Open `http://localhost:5174`. The CLI serves the D3 harness and the browser opens `/engine-events?regime=<selected>` first, using the same shared event spine as headless runs, artifacts, replay, OUSD budget accounting, and the local run engine. The legacy `/events` stream remains as a browser compatibility fallback. The browser shows claim routing, witness/tool activity, receipts, sponsor funded OUSD, sponsor remaining OUSD, and witness OUSD earnings. The browser auto-scans every 3 minutes by default. Use `ZAP_HARNESS_PORT`, `ZAP_HARNESS_EVENT_DELAY_MS`, or `ZAP_HARNESS_AUTO_RUN_MS` to change the local port, stream speed, or scan cadence.
+
+The browser dashboard is protected by the ops login gate. Set `OLEANDER_OPS_PASSWORD` for a stable password, set `OLEANDER_OPS_SESSION_SECRET` to keep sessions stable across restarts, or set `OLEANDER_OPS_AUTH=0` to disable the local login gate.
 
 The x402 compose file mirrors the Paybot shape: a facilitator accepts payment
 creation, verification, and settlement calls; a protected resource server
