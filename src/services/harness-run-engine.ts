@@ -12,7 +12,12 @@ import { reduceOracle } from "./oracle.js";
 export interface HarnessWitnessRunner {
   readonly nodeId: string;
   readonly witnessRole: WitnessRoleId;
-  readonly observe: (input: { readonly claim: ClaimSpec; readonly runId: string }) => Promise<Observation>;
+  readonly nodeIdForClaim?: (claim: ClaimSpec) => string;
+  readonly observe: (input: {
+    readonly claim: ClaimSpec;
+    readonly runId: string;
+    readonly nodeId: string;
+  }) => Promise<Observation>;
 }
 
 export interface HarnessRunEngineOptions {
@@ -80,6 +85,7 @@ export async function* streamHarnessRunEvents(
 
   try {
     for (const claim of options.claims) {
+      const nodeId = options.witness.nodeIdForClaim?.(claim) ?? options.witness.nodeId;
       yield emit({
         ...base("claim_loaded"),
         type: "claim_loaded",
@@ -89,29 +95,29 @@ export async function* streamHarnessRunEvents(
         ...base("witness_started"),
         type: "witness_started",
         claimId: claim.id,
-        nodeId: options.witness.nodeId,
+        nodeId,
         witnessRole: options.witness.witnessRole
       });
 
-      const callId = `call:${claim.id}:${options.witness.nodeId}:observe`;
+      const callId = `call:${claim.id}:${nodeId}:observe`;
       yield emit({
         ...base("tool_call_started"),
         type: "tool_call_started",
         claimId: claim.id,
-        nodeId: options.witness.nodeId,
+        nodeId,
         callId,
         toolName: "witness.observe"
       });
 
       let observation: Observation;
       try {
-        observation = await options.witness.observe({ claim, runId: options.runId });
+        observation = await options.witness.observe({ claim, runId: options.runId, nodeId });
       } catch (error) {
         yield emit({
           ...base("tool_call_finished"),
           type: "tool_call_finished",
           claimId: claim.id,
-          nodeId: options.witness.nodeId,
+          nodeId,
           callId,
           toolName: "witness.observe",
           ok: false,
@@ -124,7 +130,7 @@ export async function* streamHarnessRunEvents(
         ...base("tool_call_finished"),
         type: "tool_call_finished",
         claimId: claim.id,
-        nodeId: options.witness.nodeId,
+        nodeId,
         callId,
         toolName: "witness.observe",
         ok: true,

@@ -1,7 +1,10 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
-import type { ClaimSpec } from "../domain.js";
+import type { ClaimSpec, Observation } from "../domain.js";
+import { WitnessRoles } from "../domain.js";
+import type { HarnessEvent as EngineHarnessEvent } from "./harness-events.js";
+import { streamHarnessRunEvents } from "./harness-run-engine.js";
 import { messageHash } from "./gossip.js";
 
 export type HarnessRegimeId = "full" | "sponsor" | "availability" | "attestation" | "peg" | "stablecoins";
@@ -94,6 +97,7 @@ export type HarnessEvent =
 const bountyPerObservationAtomic = "1000000";
 const zapPerObservationAtomic = "1000000000000000000";
 const oracleNodeIds = ["witness-availability", "witness-attestation", "witness-peg"] as const;
+const browserHarnessSponsorId = "sponsor:browser-harness";
 
 const now = () => new Date().toISOString();
 const sleep = (ms: number) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
@@ -196,6 +200,62 @@ export const buildHarnessEvents = (
   return events;
 };
 
+export interface EngineHarnessEventsForRegimeOptions {
+  readonly runId?: string;
+  readonly now?: () => string;
+}
+
+export async function* streamEngineHarnessEventsForRegime(
+  claims: ReadonlyArray<ClaimSpec>,
+  regime: HarnessRegimeId = "full",
+  options: EngineHarnessEventsForRegimeOptions = {}
+): AsyncGenerator<EngineHarnessEvent> {
+  const selectedClaims = claimsForHarnessRegime(claims, regime);
+  const runId = options.runId ?? `run:engine:${messageHash("proposal", {
+    regime,
+    claims: selectedClaims.map((claim) => claim.id)
+  }).slice(0, 16)}`;
+  for await (const event of streamHarnessRunEvents({
+    runId,
+    claims: selectedClaims,
+    now: options.now,
+    payoutPerObservationAtomic: bountyPerObservationAtomic,
+    sponsorAccountId: browserHarnessSponsorId,
+    witness: {
+      nodeId: "browser-harness",
+      nodeIdForClaim: oracleForHarnessClaim,
+      witnessRole: "research",
+      observe: async ({ claim, nodeId }): Promise<Observation> => {
+        return {
+          claimId: claim.id,
+          witnessRole: WitnessRoles.find((role) => role.id === "research")?.id ?? "research",
+          nodeId,
+          response: { type: "no_answer_possible", reason: "browser harness observation requires live evidence adapter" },
+          confidence: 0.2,
+          evidence: claim.sources.map((uri) => ({ uri, note: "browser harness source queued" })),
+          rationale: `Browser harness routed ${claim.id} to ${nodeId}.`,
+          observedAt: options.now?.() ?? now(),
+          signature: messageHash("observation", { claimId: claim.id, nodeId, runId })
+        };
+      }
+    }
+  })) {
+    yield event;
+  }
+}
+
+export const collectEngineHarnessEventsForRegime = async (
+  claims: ReadonlyArray<ClaimSpec>,
+  regime: HarnessRegimeId = "full",
+  options: EngineHarnessEventsForRegimeOptions = {}
+): Promise<ReadonlyArray<EngineHarnessEvent>> => {
+  const events: EngineHarnessEvent[] = [];
+  for await (const event of streamEngineHarnessEventsForRegime(claims, regime, options)) {
+    events.push(event);
+  }
+  return events;
+};
+
 export const readHarnessClaims = async (claimFeedPath = "claims/x402-fifty-claims.json"): Promise<ReadonlyArray<ClaimSpec>> => {
   const raw = await readFile(resolve(process.cwd(), claimFeedPath), "utf8");
   return JSON.parse(raw) as ReadonlyArray<ClaimSpec>;
@@ -261,6 +321,37 @@ const eventStreamResponse = async (
   });
 };
 
+const engineEventStreamResponse = async (
+  request: Request,
+  options: Required<Pick<HarnessRunOptions, "claimFeedPath" | "eventDelayMs">>
+): Promise<Response> => {
+  const url = new URL(request.url);
+  const requestedRegime = url.searchParams.get("regime") ?? "full";
+  const regime = isHarnessRegimeId(requestedRegime) ? requestedRegime : "full";
+  const claims = await readHarnessClaims(options.claimFeedPath);
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      for await (const event of streamEngineHarnessEventsForRegime(claims, regime)) {
+        if (request.signal.aborted) break;
+        controller.enqueue(encoder.encode(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`));
+        await sleep(options.eventDelayMs);
+      }
+      controller.close();
+    }
+  });
+
+  return new Response(stream, {
+    headers: {
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+      "content-type": "text/event-stream; charset=utf-8",
+      "x-accel-buffering": "no"
+    }
+  });
+};
+
 export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
   const port = options.port ?? 5174;
   const claimFeedPath = options.claimFeedPath ?? "claims/x402-fifty-claims.json";
@@ -281,11 +372,15 @@ export const serveHarnessServer = (options: HarnessRunOptions = {}) => {
       if (url.pathname === "/events") {
         return eventStreamResponse(request, { claimFeedPath, eventDelayMs });
       }
+      if (url.pathname === "/engine-events") {
+        return engineEventStreamResponse(request, { claimFeedPath, eventDelayMs });
+      }
       return staticResponse(distRoot, url.pathname);
     }
   });
 
   process.stdout.write(`ZAP browser harness: http://${server.hostname}:${server.port}\n`);
   process.stdout.write(`SSE stream: http://${server.hostname}:${server.port}/events?regime=full\n`);
+  process.stdout.write(`Engine SSE stream: http://${server.hostname}:${server.port}/engine-events?regime=full\n`);
   return server;
 };

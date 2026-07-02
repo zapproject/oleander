@@ -2,9 +2,12 @@ import { describe, expect, test } from "bun:test";
 import type { ClaimSpec } from "../domain.js";
 import {
   buildHarnessEvents,
+  collectEngineHarnessEventsForRegime,
   claimsForHarnessRegime,
-  oracleForHarnessClaim
+  oracleForHarnessClaim,
+  streamEngineHarnessEventsForRegime
 } from "./harness-server.js";
+import { validateHarnessEventOrder } from "./harness-events.js";
 
 const claims: ClaimSpec[] = [
   {
@@ -62,5 +65,63 @@ describe("browser harness server", () => {
     expect(events.filter((event) => event.type === "work_receipt_created")).toHaveLength(3);
     expect(events.filter((event) => event.type === "bounty_created")).toHaveLength(3);
     expect(events.filter((event) => event.type === "zap_reward_created")).toHaveLength(3);
+  });
+
+  test("builds engine-backed harness events for a visual regime", async () => {
+    const events = await collectEngineHarnessEventsForRegime(claims, "peg", {
+      runId: "run:engine-server",
+      now: () => "2026-01-01T00:00:00.000Z"
+    });
+
+    expect(validateHarnessEventOrder(events)).toEqual([]);
+    expect(events.map((event) => event.type)).toEqual([
+      "run_started",
+      "balance_changed",
+      "claim_loaded",
+      "witness_started",
+      "tool_call_started",
+      "tool_call_finished",
+      "observation_signed",
+      "gossip_published",
+      "proposal_created",
+      "work_receipt_created",
+      "balance_changed",
+      "balance_changed",
+      "run_finished"
+    ]);
+    expect(events.find((event) => event.type === "claim_loaded")?.claim.id).toBe("claim:x402:50:ousd-peg-001");
+    expect(events.find((event) => event.type === "balance_changed" && event.reason === "sponsor_funded")).toMatchObject({
+      accountId: "sponsor:browser-harness",
+      asset: "OUSD",
+      deltaAtomic: "1000000"
+    });
+    expect(events.find((event) => event.type === "work_receipt_created")).toMatchObject({
+      asset: "OUSD",
+      amountAtomic: "1000000",
+      nodeId: "witness-peg"
+    });
+  });
+
+  test("streams engine-backed full network events across routed witness nodes", async () => {
+    const events = [];
+    for await (const event of streamEngineHarnessEventsForRegime(claims, "full", {
+      runId: "run:engine-full",
+      now: () => "2026-01-01T00:00:00.000Z"
+    })) {
+      events.push(event);
+    }
+
+    expect(validateHarnessEventOrder(events)).toEqual([]);
+    expect(events.filter((event) => event.type === "witness_started").map((event) => event.nodeId)).toEqual([
+      "witness-peg",
+      "witness-attestation",
+      "witness-availability"
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      type: "run_finished",
+      claimCount: 3,
+      observationCount: 3,
+      payoutAtomic: "3000000"
+    });
   });
 });
