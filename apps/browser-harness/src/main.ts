@@ -3,8 +3,10 @@ import claimsJson from "../../../claims/x402-fifty-claims.json";
 import {
   addEventItem,
   addVerboseLine,
+  applyOusdBalanceEvent,
   bountyAtomic,
   claimCategory,
+  createOusdBalanceState,
   createOracleStats,
   createVerboseReceipt,
   isEngineHarnessEvent,
@@ -12,8 +14,10 @@ import {
   liveEventTypes,
   oracleForClaim,
   regimes,
+  resetOusdBalanceState,
   resetOracleStats,
   shortClaimId,
+  summarizeOusdBalances,
   zapAtomic,
   type ClaimSpec,
   type ClaimStatus,
@@ -63,6 +67,7 @@ let nextRunAt = 0;
 type LiveEndpoint = "/engine-events" | "/events";
 
 const oracleStats: Record<string, OracleStats> = createOracleStats();
+const ousdBalanceState = createOusdBalanceState();
 
 const nodeById = new Map<string, GraphNode>();
 const linkById = new Map<string, GraphLink>();
@@ -254,6 +259,7 @@ const resetRun = () => {
   }
   for (const link of links) link.active = false;
   resetOracleStats(oracleStats);
+  resetOusdBalanceState(ousdBalanceState);
   renderAll();
 };
 
@@ -401,8 +407,9 @@ const handleLiveEvent = (event: LiveHarnessEvent) => {
     addZapReward(event.nodeId, event.zapAmountAtomic);
   }
 
-  if (event.type === "balance_changed" && event.reason === "work_receipt") {
-    setOusdBalance(event.accountId, event.balanceAtomic);
+  if (event.type === "balance_changed") {
+    applyOusdBalanceEvent(ousdBalanceState, event);
+    if (event.reason === "work_receipt") setOusdBalance(event.accountId, event.balanceAtomic);
   }
 
   if (event.type === "run_finished" || event.type === "run_failed") {
@@ -563,6 +570,36 @@ const renderSelected = () => {
   container.innerHTML = detail;
 };
 
+const appendBalanceRow = (container: HTMLElement, label: string, value: string, detail?: string) => {
+  const row = document.createElement("div");
+  row.className = "balance-row";
+  const strong = document.createElement("strong");
+  strong.textContent = label;
+  const span = document.createElement("span");
+  span.textContent = value;
+  row.append(strong, span);
+  if (detail) {
+    const small = document.createElement("small");
+    small.textContent = detail;
+    row.appendChild(small);
+  }
+  container.appendChild(row);
+};
+
+const renderBalances = () => {
+  const container = el("balance-list");
+  container.replaceChildren();
+  const summary = summarizeOusdBalances(ousdBalanceState);
+  appendBalanceRow(container, "Sponsor Funded", `${summary.sponsorFundedAtomic.toString()} atomic`);
+  appendBalanceRow(container, "Sponsor Remaining", `${summary.sponsorBalanceAtomic.toString()} atomic`);
+  appendBalanceRow(container, "Witness Earned", `${summary.witnessEarnedAtomic.toString()} atomic`);
+  for (const account of Object.values(ousdBalanceState.accounts)
+    .filter((candidate) => candidate.accountId.startsWith("witness-") && candidate.earnedAtomic > 0n)
+    .sort((left, right) => left.accountId.localeCompare(right.accountId))) {
+    appendBalanceRow(container, account.accountId, `${account.earnedAtomic.toString()} atomic`, `balance ${account.balanceAtomic.toString()} OUSD atomic`);
+  }
+};
+
 const renderReceipts = () => {
   const container = el("receipt-list");
   container.replaceChildren();
@@ -617,6 +654,7 @@ const renderAll = () => {
   renderRegimes();
   renderClaims();
   renderSelected();
+  renderBalances();
   renderReceipts();
   renderEvents();
   renderVerbose();

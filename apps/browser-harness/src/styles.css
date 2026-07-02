@@ -244,6 +244,7 @@ p {
 }
 
 .claim-list,
+.balance-list,
 .receipt-list,
 .event-list {
   display: grid;
@@ -251,6 +252,7 @@ p {
 }
 
 .claim-row,
+.balance-row,
 .receipt-row,
 .event-row,
 .selected-node {
@@ -277,6 +279,7 @@ p {
 }
 
 .claim-row span,
+.balance-row span,
 .receipt-row span,
 .event-row,
 .selected-node p {
@@ -387,10 +390,22 @@ p {
   stroke-width: 2px;
 }
 
+.balance-row,
 .receipt-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 3px 6px;
+}
+
+.balance-row strong {
+  font-size: 11px;
+}
+
+.balance-row small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 9px;
+  overflow-wrap: anywhere;
 }
 
 .event-row {

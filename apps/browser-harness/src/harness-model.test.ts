@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   addEventItem,
+  applyOusdBalanceEvent,
   claimCategory,
+  createOusdBalanceState,
   createOracleStats,
   createVerboseReceipt,
   isEngineHarnessEvent,
@@ -9,7 +11,9 @@ import {
   liveEventTypes,
   oracleForClaim,
   regimes,
+  resetOusdBalanceState,
   resetOracleStats,
+  summarizeOusdBalances,
   type EngineHarnessEvent,
   type ClaimSpec
 } from "./harness-model.js";
@@ -21,6 +25,19 @@ const claim = (overrides: Partial<ClaimSpec>): ClaimSpec => ({
   statement: "OUSD held its peg.",
   sources: ["https://example.com"],
   livenessSeconds: 60,
+  ...overrides
+});
+
+const balanceEvent = (overrides: Partial<Extract<EngineHarnessEvent, { type: "balance_changed" }>> = {}): Extract<EngineHarnessEvent, { type: "balance_changed" }> => ({
+  type: "balance_changed",
+  eventId: "evt:balance",
+  runId: "run:test",
+  accountId: "sponsor:browser-harness",
+  asset: "OUSD",
+  deltaAtomic: "2000000",
+  balanceAtomic: "2000000",
+  reason: "sponsor_funded",
+  emittedAt: "2026-01-01T00:00:00.000Z",
   ...overrides
 });
 
@@ -56,6 +73,39 @@ describe("browser harness model", () => {
     stats["witness-peg"]!.zapAtomic = 1n;
     resetOracleStats(stats);
     expect(stats["witness-peg"]).toMatchObject({ claimIds: [], observations: 0, ousdAtomic: 0n, zapAtomic: 0n });
+  });
+
+  test("reduces OUSD balance events", () => {
+    const state = createOusdBalanceState();
+    applyOusdBalanceEvent(state, balanceEvent());
+    applyOusdBalanceEvent(state, balanceEvent());
+    applyOusdBalanceEvent(state, balanceEvent({
+      eventId: "evt:settlement",
+      deltaAtomic: "-1000000",
+      balanceAtomic: "1000000",
+      reason: "settlement",
+      claimId: "claim:x402:50:ousd-peg-001"
+    }));
+    applyOusdBalanceEvent(state, balanceEvent({
+      eventId: "evt:witness",
+      accountId: "witness-peg",
+      deltaAtomic: "1000000",
+      balanceAtomic: "1000000",
+      reason: "work_receipt",
+      claimId: "claim:x402:50:ousd-peg-001"
+    }));
+
+    expect(summarizeOusdBalances(state)).toEqual({
+      sponsorFundedAtomic: 2_000_000n,
+      sponsorBalanceAtomic: 1_000_000n,
+      sponsorSpentAtomic: 1_000_000n,
+      witnessEarnedAtomic: 1_000_000n
+    });
+    expect(state.accounts["witness-peg"]?.earnedAtomic).toBe(1_000_000n);
+
+    resetOusdBalanceState(state);
+    expect(summarizeOusdBalances(state).sponsorFundedAtomic).toBe(0n);
+    expect(state.appliedEventIds.size).toBe(0);
   });
 
   test("prepends bounded event items", () => {

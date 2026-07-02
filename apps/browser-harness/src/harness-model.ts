@@ -36,6 +36,27 @@ export interface HarnessConfig {
   readonly autoRunIntervalMs: number;
 }
 
+export interface OusdBalanceAccount {
+  readonly accountId: string;
+  balanceAtomic: bigint;
+  fundedAtomic: bigint;
+  earnedAtomic: bigint;
+  spentAtomic: bigint;
+}
+
+export interface OusdBalanceState {
+  accounts: Record<string, OusdBalanceAccount>;
+  appliedEventIds: Set<string>;
+  sponsorAccountId: string | undefined;
+}
+
+export interface OusdBalanceSummary {
+  readonly sponsorFundedAtomic: bigint;
+  readonly sponsorBalanceAtomic: bigint;
+  readonly sponsorSpentAtomic: bigint;
+  readonly witnessEarnedAtomic: bigint;
+}
+
 export type LegacyLiveHarnessEvent =
   | { readonly type: "run_started"; readonly runId: string; readonly regime: RegimeId; readonly totalClaims: number; readonly emittedAt: string }
   | { readonly type: "sponsor_claims_loaded"; readonly runId: string; readonly claims: readonly ClaimSpec[]; readonly emittedAt: string }
@@ -203,6 +224,59 @@ export const resetOracleStats = (stats: Record<string, OracleStats>) => {
     stat.ousdAtomic = 0n;
     stat.zapAtomic = 0n;
   }
+};
+
+export const createOusdBalanceState = (): OusdBalanceState => ({
+  accounts: {},
+  appliedEventIds: new Set(),
+  sponsorAccountId: undefined
+});
+
+export const resetOusdBalanceState = (state: OusdBalanceState) => {
+  state.accounts = {};
+  state.appliedEventIds.clear();
+  state.sponsorAccountId = undefined;
+};
+
+const accountFor = (state: OusdBalanceState, accountId: string): OusdBalanceAccount => {
+  state.accounts[accountId] ??= {
+    accountId,
+    balanceAtomic: 0n,
+    fundedAtomic: 0n,
+    earnedAtomic: 0n,
+    spentAtomic: 0n
+  };
+  return state.accounts[accountId];
+};
+
+export const applyOusdBalanceEvent = (state: OusdBalanceState, event: LiveHarnessEvent): OusdBalanceState => {
+  if (event.type !== "balance_changed" || state.appliedEventIds.has(event.eventId)) return state;
+  state.appliedEventIds.add(event.eventId);
+  const account = accountFor(state, event.accountId);
+  const deltaAtomic = BigInt(event.deltaAtomic);
+  account.balanceAtomic = BigInt(event.balanceAtomic);
+  if (event.reason === "sponsor_funded") {
+    state.sponsorAccountId = event.accountId;
+    if (deltaAtomic > 0n) account.fundedAtomic += deltaAtomic;
+  }
+  if (event.reason === "settlement" && deltaAtomic < 0n) account.spentAtomic += -deltaAtomic;
+  if (event.reason === "work_receipt" && deltaAtomic > 0n) account.earnedAtomic += deltaAtomic;
+  return state;
+};
+
+export const summarizeOusdBalances = (state: OusdBalanceState): OusdBalanceSummary => {
+  const accounts = Object.values(state.accounts);
+  const sponsor =
+    (state.sponsorAccountId ? state.accounts[state.sponsorAccountId] : undefined) ??
+    accounts.find((account) => account.accountId.startsWith("sponsor:"));
+  return {
+    sponsorFundedAtomic: sponsor?.fundedAtomic ?? 0n,
+    sponsorBalanceAtomic: sponsor?.balanceAtomic ?? 0n,
+    sponsorSpentAtomic: sponsor?.spentAtomic ?? 0n,
+    witnessEarnedAtomic: accounts
+      .filter((account) => account.accountId.startsWith("witness-"))
+      .reduce((total, account) => total + account.earnedAtomic, 0n)
+  };
 };
 
 export const oracleForClaim = (claim: ClaimSpec): string => {
