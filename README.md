@@ -20,37 +20,16 @@ The harness runs agentic witnesses over typed claim feeds using TypeScript and E
 
 ## Commands
 
+Fast local browser run:
+
 ```bash
 bun install
-bun run ci
-bun run build
-bun run typecheck
-bun run browser:typecheck
 bun run harness
-bun run browser
-bun run browser:build
-bun test
-bun run dev -- claims list
-bun run dev -- deepseek smoke
-bun run dev
-bun run dev -- --once
-bun run dev -- runs replay runs/run-a.json
-bun run dev -- headless run --once
-bun run dev -- headless stream --once
-bun run dev -- harness serve
-bun run dev -- roles list
-bun run dev -- x402 scenario
-bun run dev -- x402 work --once
-bun run dev -- x402 serve facilitator
-bun run dev -- x402 serve resource
-bun run dev -- council hello
-bun run dev -- council --once
-bun run dev -- council --role law --once
-bun run dev -- run --once
-bun run dev -- run --daemon --ticks 1
 ```
 
-Installable CLI target:
+Open `http://localhost:5174`. The app builds first, then serves the browser cockpit and streams engine events into it.
+
+Install and run the `oleander` command:
 
 ```bash
 bun run build
@@ -59,30 +38,58 @@ oleander
 oleander --once
 oleander runs replay runs/run-a.json
 oleander headless run --once
+oleander headless stream --once
 ```
 
-Docker testbed:
+Development checks:
+
+```bash
+bun run ci
+bun run typecheck
+bun run browser:typecheck
+bun test
+```
+
+Useful local commands:
+
+```bash
+bun run dev -- claims list
+bun run dev -- deepseek smoke
+bun run dev -- harness serve
+bun run dev -- runs replay runs/run-a.json
+bun run dev -- x402 scenario
+bun run dev -- x402 work --once
+```
+
+Docker paths:
 
 ```bash
 docker compose up --build
-```
-
-Open `http://localhost:5174` for the browser harness. Run one-shot CLI workers with:
-
-```bash
 docker compose --profile workers up --build
-```
-
-x402 mock work scenario:
-
-```bash
 ./scripts/test-x402-mock.sh
 ```
 
-Oleander UI:
+## Run Paths
 
-```bash
-bun run ui
+```mermaid
+flowchart TD
+  user[User] --> install{How are you running it?}
+  install -->|local browser| harness["bun run harness"]
+  install -->|installed command| oleander["oleander"]
+  install -->|automation| headless["oleander headless run --once"]
+  install -->|streaming automation| stream["oleander headless stream --once"]
+
+  harness --> serve["Build browser app and serve http://localhost:5174"]
+  oleander --> cockpit["Render Oleander cockpit"]
+  headless --> json["Print raw JSON and write run artifact"]
+  stream --> ndjson["Print NDJSON events as the run progresses"]
+
+  serve --> browser["Browser cockpit"]
+  cockpit --> artifact["Run artifact in runs/"]
+  json --> artifact
+  ndjson --> artifact
+  artifact --> replay["oleander runs replay runs/run-a.json"]
+  replay --> cockpit
 ```
 
 The default product surface is the Oleander UI. Use `oleander --once` for a one-shot cockpit render, `oleander runs replay <file>` to reopen a saved run in the cockpit, `oleander headless run --once` when you need raw event JSON without the UI, and `oleander headless stream --once` when automation needs newline-delimited events as the run progresses.
@@ -104,19 +111,29 @@ Run artifacts are written to `runs/` by default for `x402 work --once`, UI runs,
 
 ## Architecture
 
-```text
-oleander CLI
-  -> claim feed
-  -> scheduled witness runtime
-  -> DeepSeek tool-call witness evidence and model workflow
-  -> typed validator
-  -> signer
-  -> gossip evidence set
-  -> optimistic oracle reducer
-  -> work and reward receipts
+```mermaid
+flowchart LR
+  sponsor[Sponsor] --> x402[x402 payment gate]
+  x402 --> feed[Typed claim feed]
+  feed --> engine[Harness run engine]
+  engine --> witness[Witness runner]
+  witness --> deepseek[DeepSeek tool-call model]
+  witness --> evidence[Evidence adapters]
+  evidence --> validator[Typed validator]
+  validator --> signer[Deterministic dev signer]
+  signer --> gossip[Gossip message set]
+  gossip --> oracle[Optimistic oracle reducer]
+  oracle --> proposal[Proposal, dispute, or settlement]
+  proposal --> receipts[Work receipts]
+  receipts --> balances[OUSD balances]
+  engine --> artifact[Run artifact]
+  engine --> sse["/engine-events SSE"]
+  sse --> browser[Browser cockpit]
+  balances --> browser
+  artifact --> replay[Replay and verification]
 ```
 
-The important rule: gossip converges signed evidence, DeepSeek tool-call witness gathers and critiques, the validator enforces typed boundaries, and the oracle reducer derives proposal/dispute/settlement state.
+The important rule: gossip converges signed evidence, the DeepSeek tool-call witness gathers and critiques evidence, the validator enforces typed boundaries, and the oracle reducer derives proposal/dispute/settlement state. OUSD balance events come from the same engine stream that powers the browser, headless runs, artifacts, and replay.
 
 ## Council Roles
 

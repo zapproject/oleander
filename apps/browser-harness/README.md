@@ -2,6 +2,8 @@
 
 D3 browser cockpit for the ZAP x402 oracle scenario.
 
+## Run It
+
 ```bash
 bun run harness
 ```
@@ -11,6 +13,20 @@ streams claim work into the graph over Server-Sent Events from `/engine-events`.
 The stream is the same shared harness event spine used by headless runs, saved
 artifacts, replay, and OUSD budget accounting. The browser auto-scans every 3
 minutes; set `ZAP_HARNESS_AUTO_RUN_MS` to change the cadence.
+
+```mermaid
+flowchart LR
+  command["bun run harness"] --> build["vite build apps/browser-harness"]
+  build --> server["oleander harness serve"]
+  server --> browser["http://localhost:5174"]
+  browser --> engine["/engine-events?regime=selected"]
+  engine --> model["browser event model"]
+  model --> graph["D3 network graph"]
+  model --> balances["OUSD balances"]
+  model --> receipts["receipts and event timeline"]
+  browser -. fallback .-> legacy["/events"]
+  legacy -. fallback .-> simulation["in-browser simulation"]
+```
 
 For frontend-only iteration without the live stream:
 
