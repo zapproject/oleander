@@ -7,6 +7,7 @@ import {
   claimCategory,
   createOracleStats,
   createVerboseReceipt,
+  isEngineHarnessEvent,
   liveEventLabel,
   liveEventTypes,
   oracleForClaim,
@@ -59,6 +60,7 @@ let liveStreamStarted = false;
 let autoRunIntervalMs = 180_000;
 let autoRunTimer: number | undefined;
 let nextRunAt = 0;
+type LiveEndpoint = "/engine-events" | "/events";
 
 const oracleStats: Record<string, OracleStats> = createOracleStats();
 
@@ -285,6 +287,17 @@ const addVerboseEvent = (event: LiveHarnessEvent) => {
   verboseLines = addVerboseLine(verboseLines, event, 10);
 };
 
+const ensureActiveClaim = (incomingClaim: ClaimSpec): ClaimSpec => {
+  const claim = claims.find((candidate) => candidate.id === incomingClaim.id) ?? incomingClaim;
+  if (!activeClaims.some((candidate) => candidate.id === claim.id)) activeClaims = [...activeClaims, claim];
+  return claim;
+};
+
+const activateOracleSinkLink = (oracle: string, sink: "receipts" | "gossip") => {
+  const link = linkById.get(`${oracle.replace("witness-", "")}-${sink}`);
+  if (link) link.active = true;
+};
+
 const markClaimObserved = (claimId: string, oracle: string) => {
   const claim = claims.find((candidate) => candidate.id === claimId);
   const node = nodeById.get(claimId);
@@ -304,6 +317,11 @@ const markClaimObserved = (claimId: string, oracle: string) => {
 const addBounty = (oracle: string, amountAtomic: string) => {
   const stat = oracleStats[oracle];
   if (stat) stat.ousdAtomic += BigInt(amountAtomic);
+};
+
+const setOusdBalance = (oracle: string, balanceAtomic: string) => {
+  const stat = oracleStats[oracle];
+  if (stat) stat.ousdAtomic = BigInt(balanceAtomic);
 };
 
 const addZapReward = (oracle: string, amountAtomic: string) => {
@@ -344,9 +362,35 @@ const handleLiveEvent = (event: LiveHarnessEvent) => {
     activeClaims = event.claims.map((claim) => claims.find((candidate) => candidate.id === claim.id) ?? claim);
   }
 
+  if (event.type === "claim_loaded") {
+    const claim = ensureActiveClaim(event.claim);
+    selectedNodeId = claim.id;
+    const feedLink = linkById.get(`feed-${claim.id}`);
+    if (feedLink) feedLink.active = true;
+  }
+
+  if (event.type === "witness_started" || event.type === "tool_call_started" || event.type === "tool_call_finished") {
+    selectedNodeId = event.claimId;
+    const oracleLink = linkById.get(`${event.claimId}-${event.nodeId}`);
+    if (oracleLink) oracleLink.active = true;
+  }
+
   if (event.type === "observation_signed") {
     markClaimObserved(event.claimId, event.nodeId);
     selectedNodeId = event.claimId;
+  }
+
+  if (event.type === "gossip_published") {
+    activateOracleSinkLink(event.nodeId, "gossip");
+  }
+
+  if (event.type === "proposal_created" || event.type === "dispute_created" || event.type === "settlement_created") {
+    selectedNodeId = event.claimId;
+  }
+
+  if (event.type === "work_receipt_created") {
+    activateOracleSinkLink(event.nodeId, "receipts");
+    if (isEngineHarnessEvent(event)) addBounty(event.nodeId, event.amountAtomic);
   }
 
   if (event.type === "bounty_created") {
@@ -357,7 +401,11 @@ const handleLiveEvent = (event: LiveHarnessEvent) => {
     addZapReward(event.nodeId, event.zapAmountAtomic);
   }
 
-  if (event.type === "run_finished") {
+  if (event.type === "balance_changed" && event.reason === "work_receipt") {
+    setOusdBalance(event.accountId, event.balanceAtomic);
+  }
+
+  if (event.type === "run_finished" || event.type === "run_failed") {
     running = false;
     eventSource?.close();
     eventSource = undefined;
@@ -387,28 +435,37 @@ const startLiveRun = () => {
   liveStreamStarted = false;
   addEvent(`Opening live SSE run ${runIndex}: ${activeRegime.label}`);
 
-  const source = new EventSource(`/events?regime=${encodeURIComponent(activeRegime.id)}`);
-  eventSource = source;
-  for (const type of liveEventTypes) {
-    source.addEventListener(type, (message) => {
-      handleLiveEvent(JSON.parse((message as MessageEvent).data) as LiveHarnessEvent);
-    });
-  }
-
-  source.onerror = () => {
-    source.close();
-    eventSource = undefined;
-    if (!liveStreamStarted) {
-      running = false;
-      addEvent("Live stream unavailable; using browser simulation");
-      startSimulatedRun();
-      return;
+  const openLiveStream = (endpoint: LiveEndpoint) => {
+    const source = new EventSource(`${endpoint}?regime=${encodeURIComponent(activeRegime.id)}`);
+    eventSource = source;
+    for (const type of liveEventTypes) {
+      source.addEventListener(type, (message) => {
+        handleLiveEvent(JSON.parse((message as MessageEvent).data) as LiveHarnessEvent);
+      });
     }
-    running = false;
-    addEvent("Live stream closed");
-    renderAll();
+
+    source.onerror = () => {
+      source.close();
+      if (eventSource === source) eventSource = undefined;
+      if (!liveStreamStarted && endpoint === "/engine-events") {
+        addEvent("Engine stream unavailable; opening compatibility stream");
+        openLiveStream("/events");
+        renderAll();
+        return;
+      }
+      if (!liveStreamStarted) {
+        running = false;
+        addEvent("Live stream unavailable; using browser simulation");
+        startSimulatedRun();
+        return;
+      }
+      running = false;
+      addEvent("Live stream closed");
+      renderAll();
+    };
   };
 
+  openLiveStream("/engine-events");
   renderAll();
 };
 
